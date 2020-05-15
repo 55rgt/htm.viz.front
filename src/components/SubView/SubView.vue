@@ -1,0 +1,10 @@
+<template>
+  <div class="sub-container"></div>
+</template>
+
+<script src='./SubView.ts'>
+</script>
+
+<style lang='sass' scoped>
+  @import './SubView.sass'
+</style>
