@@ -1,5 +1,5 @@
 <template>
-  <div class="subGraph-container">
+  <div class="subGraph-container" ref="subGraph" id="subGraphID">
   </div>
 </template>
 
