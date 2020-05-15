@@ -1,6 +1,9 @@
 <template>
   <div class="sub-wrapper">
-    <div class="sub-container"></div>
+    <div class="sub-container">
+      <SubDisplay/>
+      <SubGraph/>
+    </div>
   </div>
 </template>
 
