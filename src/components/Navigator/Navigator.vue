@@ -1,10 +1,10 @@
 <template>
   <div class="nav-wrapper">
     <div class="nav-container">
-      <div class="file-input"></div>
-      <div class="tree-container"></div>
-      <div class="weight-container"></div>
-      <div class="generate-button"></div>
+      <div class="file-input"> Input Data </div>
+      <NavTree/>
+      <NavWeight/>
+      <div class="generate-button"> Update View </div>
     </div>
   </div>
 </template>
