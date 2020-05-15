@@ -1,5 +1,7 @@
 <template>
-  <div class="nav-container"></div>
+  <div class="nav-wrapper">
+    <div class="nav-container"></div>
+  </div>
 </template>
 
 <script src='./Navigator.ts'>

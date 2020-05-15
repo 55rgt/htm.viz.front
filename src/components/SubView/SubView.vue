@@ -1,5 +1,7 @@
 <template>
-  <div class="sub-container"></div>
+  <div class="sub-wrapper">
+    <div class="sub-container"></div>
+  </div>
 </template>
 
 <script src='./SubView.ts'>
