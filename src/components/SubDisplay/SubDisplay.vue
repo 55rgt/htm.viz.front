@@ -6,8 +6,19 @@
       <div class="subDisplay-text-item"></div>
     </div>
     <div class="subDisplay-controller-container">
-      1. Radiobutton 기능 하는 List (안에는 멀티 선택 가능한 Metric 이 한 개씩 있음)
-      2. Sort 옵션
+      <div class="subDisplay-metric-list-container">
+        <div class="subDisplay-metric-item-container" v-for="(n, i) in 10" :key="n"
+             :style="{ background: isFocused(i) ? shadeColor(getMetricPalette(i), 70) : 'none'}"
+        @click.self=changeFocusedMetric(i)>
+          <div class="subDisplay-metric-item" :style="{ background: getMetricPalette(i),
+          border: '1px solid'+ shadeColor(getMetricPalette(i), -20)}"
+          @click="changeSelectedMetrics(i)">
+            <font-awesome-icon v-if=isSelected(i) class="check-icon" :icon="['fas', 'check']"
+            :style="{ color: shadeColor(getMetricPalette(i), -40)}"/>
+          </div>
+        </div>
+      </div>
+      <div class="subDisplay-order-container"> Order By </div>
     </div>
     <div class="subDisplay-content-container" @click="tempCallSubGraph"></div>
   </div>
