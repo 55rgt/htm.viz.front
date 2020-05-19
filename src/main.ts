@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faSortAmountDown } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import App from './App/App.vue';
 import router from './router';
@@ -8,6 +8,7 @@ import store from './store';
 import vuetify from './plugins/vuetify';
 
 library.add(faCheck);
+library.add(faSortAmountDown);
 
 Vue.config.productionTip = false;
 
