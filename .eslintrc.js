@@ -17,5 +17,8 @@ module.exports = {
     'class-methods-use-this': 0,
     '@typescript-eslint/ban-ts-ignore': 'off',
     'operator-linebreak': 'off',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-unused-vars': 'off',
+    'no-shadow': 'off',
   },
 };

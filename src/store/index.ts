@@ -12,6 +12,7 @@ export default new Vuex.Store({
       selectedMetrics: _.range(10) as number[], // 나중에는 string[]으로 해야 함.
       focusedMetricIdx: 0 as number,
     },
+    dayUnit: 3,
   },
   mutations: {
   },

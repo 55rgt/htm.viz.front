@@ -26,7 +26,8 @@
         <div class="subDisplay-order"></div>
       </div>
     </div>
-    <div class="subDisplay-content-container" @click="tempCallSubGraph"></div>
+    <div class="subDisplay-content-container" ref="subDisplay"
+         id="subDisplayID" @click="tempCallSubGraph"/>
   </div>
 </template>
 
