@@ -154,17 +154,29 @@ export default class SubDisplay extends Vue {
     const left = svg.append('g')
       .attr('id', 'leftDisplay');
 
-    const leftBar = left.append('g');
+    const leftBarUnits = left.append('g')
+      .attr('class', 'leftBar');
 
-    leftBar.append('rect')
-      .attr('id', 'leftBar')
-      .attr('x', this.bars[BarIdx.LEFT].x)
-      .attr('y', this.bars[BarIdx.LEFT].y)
-      .attr('width', this.bars[BarIdx.LEFT].width)
-      .attr('height', this.bars[BarIdx.LEFT].height)
-      .attr('fill', this.bars[BarIdx.LEFT].color);
+    leftBarUnits
+      .selectAll('rect')
+      .data(this.barUnits[BarIdx.LEFT])
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'barUnit')
+          .attr('x', (d: SubDisplayBarUnit) => d.x)
+          .attr('y', (d: SubDisplayBarUnit) => d.y)
+          .attr('width', (d: SubDisplayBarUnit) => d.width)
+          .attr('height', (d: SubDisplayBarUnit) => d.height)
+          .attr('fill', this.bars[BarIdx.LEFT].color),
+        (exit: any) => exit
+          .on('end', function () {
+            // @ts-ignore
+            d3.select(this).remove();
+          })
+      );
 
-    d3.select('#leftBar')
+    d3.selectAll('.barUnit')
       // @ts-ignore
       .call(d3.drag()
         .on('start', function () {
@@ -226,8 +238,12 @@ export default class SubDisplay extends Vue {
 
     let id = '';
     this.bars[barIndex].y += delta;
+    _.forEach(this.barUnits[barIndex], (d) => d.y += delta);
     barIndex === 0 ? id = '#leftBar' : id = '#rightBar';
     d3.select(id).attr('y', () => this.bars[barIndex].y);
+    d3.selectAll('.barUnit').each(function (d: any, i) {
+      d3.select(this).attr('y', d.y);
+    })
 
   }
 
