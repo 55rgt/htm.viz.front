@@ -23,11 +23,11 @@
           <font-awesome-icon class="sort-amount-down-icon" :icon="['fas', 'sort-amount-down']"
                              rotation="90"/>
         </div>
-        <div class="subDisplay-order"></div>
+        <div class="subDisplay-order" @click="tempCallSubGraph"/>
       </div>
     </div>
     <div class="subDisplay-content-container" ref="subDisplay"
-         id="subDisplayID" @click="tempCallSubGraph"/>
+         id="subDisplayID"/>
   </div>
 </template>
 

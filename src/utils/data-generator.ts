@@ -11,8 +11,10 @@ const getSubDisplayDaily = (
     .take(Math.floor(Math.random() * (m[1] - m[0]) + m[0]))
     .map((d) => ({
       metric: d,
-      score: Math.floor(Math.random() * (r[1] - r[0]) + r[0]),
+      value: Math.floor(Math.random() * (r[1] - r[0]) + r[0]),
     }))
+    .keyBy('metric')
+    .mapValues('value')
     .value(),
 }));
 

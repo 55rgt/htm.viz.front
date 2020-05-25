@@ -1,10 +1,17 @@
+/* eslint-disable */
 import { Vue, Component } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import { shadeColor } from '@/utils/color-controller';
-import getSubDisplayDaily from '@/utils/data-generator';
-import { SubDisplayDaily, SubDisplayUnit, SVG } from '@/interface/interface';
+import getDaily from '@/utils/data-generator';
+import {
+  SubDisplayDaily, SubDisplayUnit, SubDisplayBar, SVG, SubDisplayBarUnit, SubDisplayItem
+} from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
+
+enum BarIdx {
+  LEFT, RIGHT,
+}
 
 @Component({})
 export default class SubDisplay extends Vue {
@@ -16,6 +23,11 @@ export default class SubDisplay extends Vue {
 
   private shadeColor = shadeColor;
 
+  private dragObj = {
+    isDown: false,
+    py: -1,
+  };
+
   private options = {
     barWidth: 4,
     gap: 90,
@@ -25,31 +37,53 @@ export default class SubDisplay extends Vue {
     },
   };
 
-  private subDisplayDailyLists: [SubDisplayDaily[], SubDisplayDaily[]] = [[], []];
+  private bars!: [SubDisplayBar, SubDisplayBar];
+
+  private dailyLists: [SubDisplayDaily[], SubDisplayDaily[]] = [[], []];
+
+  private units: [SubDisplayUnit[], SubDisplayUnit[]] = [[], []];
+
+  private barUnits: [SubDisplayBarUnit[], SubDisplayBarUnit[]] = [[], []];
+
+  private items: [SubDisplayItem[], SubDisplayItem[]] = [[], []];
 
   private tempCallSubGraph() {
     eventBus.$emit('updateSubGraph');
     console.log(this.$store.state.displayMetric);
-    this.subDisplayDailyLists = [
-      getSubDisplayDaily([5, 10], [10, 20]),
-      getSubDisplayDaily([5, 10], [10, 20]),
-    ];
-    console.log(this.subDisplayDailyLists);
-    const tmpData = _.chain(this.subDisplayDailyLists[0])
-      .orderBy(['dayIndex'], ['asc'])
-      .groupBy((d) => Math.floor(d.dayIndex / this.$store.state.dayUnit))
-      .map((d: SubDisplayDaily[]) => _.reduce(d, (result, value) => {
-        console.log(value);
-        return result;
-      }, {
-        dayIndexes: [],
-        metrics: [],
-      } as SubDisplayUnit))
-      .value();
-
     this.initialize();
     this.remove();
     this.drawElements();
+  }
+
+  private getUnit(data: SubDisplayDaily[]) {
+    return _.chain(data)
+      .orderBy(['dayIndex'], ['asc'])
+      .groupBy((d) => Math.floor(d.dayIndex / this.$store.state.dayUnit))
+      .map((d: SubDisplayDaily[]) => ({
+        dayIndexes: _.map(d, (e: SubDisplayDaily) => e.dayIndex),
+        metrics: _.chain({})
+          .mergeWith(...(_.map(d, (e: SubDisplayDaily) => e.metrics)),
+            (obj: number, src: number) => (_.isNumber(obj) ? obj + src : src))
+          .entries()
+          .map((k) => ({ metric: +k[0], score: k[1] }))
+          // sortBy specific criterion
+          .value(),
+      }))
+      .value();
+  }
+
+  private getBarUnit(barIndex: BarIdx) {
+
+    const bar = barIndex === BarIdx.LEFT ? this.bars[BarIdx.LEFT] : this.bars[BarIdx.RIGHT];
+    const unit = barIndex === BarIdx.LEFT ? this.units[BarIdx.LEFT] : this.units[BarIdx.RIGHT];
+
+    return _.times(this.units[barIndex].length, (i) => ({
+      x: bar.x,
+      y: bar.y + i * (bar.height / unit.length),
+      width: bar.width,
+      height: bar.height / unit.length,
+      unitIndex: i,
+    }));
   }
 
   private initialize() {
@@ -59,20 +93,58 @@ export default class SubDisplay extends Vue {
       height: this.$refs.subDisplay.offsetHeight,
       svg: null,
     };
+
+    // 하루 단위로 랜덤 데이터를 생성함. 이후에 진짜 데이터로 갈아끼움
+    this.dailyLists = [
+      getDaily([5, 10], [10, 20]),
+      getDaily([5, 10], [10, 20]),
+    ];
+    console.log(this.dailyLists);
+
+    // 하루 단위의 데이터를 dayUnit 별로 묶어서 저장함.
+    this.units = [
+      this.getUnit(this.dailyLists[BarIdx.LEFT]),
+      this.getUnit(this.dailyLists[BarIdx.RIGHT]),
+    ];
+    console.log(this.units);
+
+    this.bars = [{
+      x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
+      y: this.options.margin.y / 2,
+      width: this.options.barWidth,
+      height: (this.units[BarIdx.LEFT].length
+        * (this.subDisplaySVG.height - this.options.margin.y))
+        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
+      color: '#bed7b2',
+    }, {
+      x: (this.subDisplaySVG.width + this.options.gap - this.options.barWidth) / 2,
+      y: (this.units[BarIdx.LEFT].length * (this.subDisplaySVG.height - this.options.margin.y))
+        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length) + this.options.margin.y / 2,
+      width: this.options.barWidth,
+      height: (this.units[BarIdx.RIGHT].length
+        * (this.subDisplaySVG.height - this.options.margin.y))
+        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
+      color: '#edb6d3',
+    }];
+
+    this.barUnits = [
+      this.getBarUnit(BarIdx.LEFT),
+      this.getBarUnit(BarIdx.RIGHT),
+    ];
+
+    console.log(this.barUnits);
+
+    // units 돌면서 제일 긴 애 측정하기.
+
+    // subDisplayItem 만들기
   }
 
   private remove() {
     d3.select(`#${this.subDisplaySVG.svgID}`).remove();
   }
 
-  private getUnitLength() {
-    return {
-      left: Math.ceil(this.subDisplayDailyLists[0].length / this.$store.state.dayUnit),
-      right: Math.ceil(this.subDisplayDailyLists[1].length / this.$store.state.dayUnit),
-    };
-  }
-
   private drawElements() {
+    const that = this;
     const svg = d3.select('#subDisplayID')
       .append('svg')
       .attr('id', this.subDisplaySVG.svgID)
@@ -82,33 +154,85 @@ export default class SubDisplay extends Vue {
     const left = svg.append('g')
       .attr('id', 'leftDisplay');
 
-    const leftBar = left.append('g')
-      .attr('id', 'leftBar');
+    const leftBar = left.append('g');
 
     leftBar.append('rect')
-      .attr('x', (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2)
-      .attr('y', this.options.margin.y / 2)
-      .attr('width', this.options.barWidth)
-      .attr('height', (this.getUnitLength().left
-        * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.getUnitLength().left + this.getUnitLength().right))
-      .attr('fill', '#bed7b2');
+      .attr('id', 'leftBar')
+      .attr('x', this.bars[BarIdx.LEFT].x)
+      .attr('y', this.bars[BarIdx.LEFT].y)
+      .attr('width', this.bars[BarIdx.LEFT].width)
+      .attr('height', this.bars[BarIdx.LEFT].height)
+      .attr('fill', this.bars[BarIdx.LEFT].color);
+
+    d3.select('#leftBar')
+      // @ts-ignore
+      .call(d3.drag()
+        .on('start', function () {
+          // @ts-ignore
+          that.startDrag(d3.mouse(this));
+        })
+        .on('drag', function () {
+          // @ts-ignore
+          that.moveDrag(d3.mouse(this), BarIdx.LEFT);
+        })
+        .on('end', function () {
+          // @ts-ignore
+          that.endDrag(d3.mouse(this));
+        }));
 
     const right = svg.append('g')
       .attr('id', 'rightDisplay');
 
-    const rightBar = right.append('g')
-      .attr('id', 'rightBar');
+    const rightBar = right.append('g');
 
     rightBar.append('rect')
-      .attr('x', (this.subDisplaySVG.width + this.options.gap - this.options.barWidth) / 2)
-      .attr('y', (this.getUnitLength().left * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.getUnitLength().left + this.getUnitLength().right) + this.options.margin.y / 2)
-      .attr('width', this.options.barWidth)
-      .attr('height', (this.getUnitLength().right
-        * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.getUnitLength().left + this.getUnitLength().right))
-      .attr('fill', '#edb6d3');
+      .attr('id', 'rightBar')
+      .attr('x', this.bars[BarIdx.RIGHT].x)
+      .attr('y', this.bars[BarIdx.RIGHT].y)
+      .attr('width', this.bars[BarIdx.RIGHT].width)
+      .attr('height', this.bars[BarIdx.RIGHT].height)
+      .attr('fill', this.bars[BarIdx.RIGHT].color);
+
+    d3.select('#rightBar')
+      // @ts-ignore
+      .call(d3.drag()
+        .on('start', function () {
+          // @ts-ignore
+          that.startDrag(d3.mouse(this));
+        })
+        .on('drag', function () {
+          // @ts-ignore
+          that.moveDrag(d3.mouse(this), BarIdx.RIGHT);
+        })
+        .on('end', function () {
+          // @ts-ignore
+          that.endDrag(d3.mouse(this));
+        }));
+  }
+
+  private startDrag(d: any) {
+    this.dragObj.isDown = true;
+    this.dragObj.py = d[1];
+  }
+
+  private moveDrag(d: any, barIndex: BarIdx) {
+    if (!this.dragObj.isDown) return;
+    const delta = d[1] - this.dragObj.py;
+    this.dragObj.py = d[1];
+
+    if (this.bars[barIndex].y + delta < this.options.margin.y / 2
+    || this.bars[barIndex].y + this.bars[barIndex].height + delta
+      > this.subDisplaySVG.height - this.options.margin.y / 2) return;
+
+    let id = '';
+    this.bars[barIndex].y += delta;
+    barIndex === 0 ? id = '#leftBar' : id = '#rightBar';
+    d3.select(id).attr('y', () => this.bars[barIndex].y);
+
+  }
+
+  private endDrag(d: any) {
+    this.dragObj.isDown = false;
   }
 
   private isFocused(idx: number) {
