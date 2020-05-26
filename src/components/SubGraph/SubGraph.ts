@@ -35,7 +35,6 @@ export default class SubGraph extends Vue {
 
   created() {
     eventBus.$on('updateSubGraph', () => {
-      console.log('update Sub Graph');
       this.initialize();
       this.remove();
       this.drawElements();
@@ -60,7 +59,6 @@ export default class SubGraph extends Vue {
 
   private remove() {
     d3.select(`#${this.subGraphSVG.svgID}`).remove();
-    console.log(this.subGraphSVG);
   }
 
   private updateChart() {

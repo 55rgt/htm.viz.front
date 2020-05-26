@@ -27,7 +27,9 @@
       </div>
     </div>
     <div class="subDisplay-content-container" ref="subDisplay"
-         id="subDisplayID"/>
+         id="subDisplayID">
+      <div class="subDisplay-content-div"></div>
+    </div>
   </div>
 </template>
 

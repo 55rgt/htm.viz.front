@@ -101,14 +101,12 @@ export default class SubDisplay extends Vue {
       getDaily([5, 10], [10, 20]),
       getDaily([5, 10], [10, 20]),
     ];
-    console.log(this.dailyLists);
 
     // 하루 단위의 데이터를 dayUnit 별로 묶어서 저장함.
     this.units = [
       this.getUnit(this.dailyLists[BarIdx.LEFT]),
       this.getUnit(this.dailyLists[BarIdx.RIGHT]),
     ];
-    console.log(this.units);
 
     this.bars = [{
       x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
@@ -131,21 +129,15 @@ export default class SubDisplay extends Vue {
 
     this.barUnits = [this.getBarUnit(BarIdx.LEFT), this.getBarUnit(BarIdx.RIGHT)];
 
-    console.log(this.barUnits);
-
     // units 돌면서 제일 긴 애 측정하기.
     this.maxUnitScore = _.chain(this.units)
-      .flatten()
+      .flattenDeep()
       .map((d) => _.sumBy(d.metrics, e => e.score))
       .max()
       .value();
 
-    console.log(`maxUnitLength: ${this.maxUnitScore}`);
-
     // subDisplayItem 만들기
     this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
-
-    console.log(this.items);
   }
 
   /*
@@ -164,16 +156,18 @@ export default class SubDisplay extends Vue {
         _.forEach(sorted, (d, rank) => {
           result.push({
             x: barIndex === BarIdx.LEFT ?
-              -1 + this.bars[barIndex].x - ((this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2)
-              * _.chain(sorted).slice(0, rank + 1).sumBy('score').value()) / this.maxUnitScore
-              : this.bars[barIndex].x + this.options.barWidth + 1 +
-              ((this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2) *
-              _.chain(sorted).slice(0, rank + 1).sumBy('score').value()) / this.maxUnitScore,
+              (this.bars[barIndex].x - 1)
+              - (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
+              * (_.chain(sorted).slice(0, rank + 1).sumBy('score').value() / this.maxUnitScore)
+              :
+              (this.bars[barIndex].x + this.options.barWidth + 1)
+              + (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
+              * (_.chain(sorted).slice(0, rank).sumBy('score').value() / this.maxUnitScore),
             y: this.barUnits[barIndex][unitIndex].y,
             metric: d.metric,
             rank: rank,
             unitIndex: unitIndex,
-            width: d.score * (this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2)
+            width: d.score * (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
             / this.maxUnitScore,
             height: this.barUnits[barIndex][unitIndex].height,
             color: this.$store.state.displayMetric.metricPalette[d.metric],
@@ -220,7 +214,7 @@ export default class SubDisplay extends Vue {
           .attr('height', (d: SubDisplayItem) => d.height)
           .attr('fill', (d: SubDisplayItem) => d.color)
           .attr('fill-opacity', 0.9)
-          .attr('stroke', shadeColor(this.bars[BarIdx.LEFT].color, 20)),
+          .attr('stroke', '#fff'),
         (exit: any) => exit
           .on('end', function () {
             // @ts-ignore
@@ -261,7 +255,7 @@ export default class SubDisplay extends Vue {
         })
         .on('end', function () {
           // @ts-ignore
-          that.endDrag(d3.mouse(this));
+          that.endDrag(d3.mouse(this), BarIdx.LEFT);
         }));
 
     const right = svg.append('g')
@@ -282,7 +276,8 @@ export default class SubDisplay extends Vue {
           .attr('width', (d: SubDisplayItem) => d.width)
           .attr('height', (d: SubDisplayItem) => d.height)
           .attr('fill', (d: SubDisplayItem) => d.color)
-          .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40)),
+          .attr('fill-opacity', 0.9)
+          .attr('stroke', '#fff'),
         (exit: any) => exit
           .on('end', function () {
             // @ts-ignore
@@ -326,7 +321,7 @@ export default class SubDisplay extends Vue {
         })
         .on('end', function () {
           // @ts-ignore
-          that.endDrag(d3.mouse(this));
+          that.endDrag(d3.mouse(this), BarIdx.RIGHT);
         }));
   }
 
@@ -344,24 +339,45 @@ export default class SubDisplay extends Vue {
     || this.bars[barIndex].y + this.bars[barIndex].height + delta
       > this.subDisplaySVG.height - this.options.margin.y / 2) return;
 
-    this.bars[barIndex].y += delta;
-    _.forEach(this.barUnits[barIndex], (d) => d.y += delta);
-    const s = (barIndex === 0 ? {
+    this.updateYPosition(barIndex, delta);
+  }
+
+  private updateYPosition(moveIndex: BarIdx, delta: number) {
+    this.bars[moveIndex].y += delta;
+    _.forEach(this.barUnits[moveIndex], (d) => d.y += delta);
+    _.forEach(this.items[moveIndex], (d) => d.y += delta);
+    const s = (moveIndex === BarIdx.LEFT ? {
       id: '#leftBar',
       unitClass: '.leftBarUnit',
+      itemClass: '.leftItem',
     } : {
       id: '#rightBar',
       unitClass: '.rightBarUnit',
+      itemClass: '.rightItem',
     });
-    d3.select(s.id).attr('y', () => this.bars[barIndex].y);
+    d3.select(s.id).attr('y', () => this.bars[moveIndex].y);
     d3.selectAll(s.unitClass).each(function (d: any) {
       d3.select(this).attr('y', d.y);
-    })
-
+    });
+    d3.selectAll(s.itemClass).each(function (d: any) {
+      d3.select(this).attr('y', d.y);
+    });
   }
 
-  private endDrag(d: any) {
+  private endDrag(d: any, barIndex: BarIdx) {
     this.dragObj.isDown = false;
+    const obj = {
+      moveIdx: barIndex,
+      upperIdx: this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ? BarIdx.LEFT : BarIdx.RIGHT,
+      overLapY: this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ?  this.bars[BarIdx.RIGHT].y : this.bars[BarIdx.LEFT].y,
+      unitHeight: this.barUnits[BarIdx.LEFT][0].height,
+    };
+    const targetUnit = _.find(this.barUnits[obj.upperIdx],(d) => obj.overLapY >= d.y && obj.overLapY <= d.y + d.height);
+    const gap = _.isUndefined(targetUnit) ? 0 : targetUnit.y + targetUnit.height - obj.overLapY;
+    const sign = [1, 2, 4, 7].includes(4 * (1 - obj.moveIdx) + 2 * (1 - obj.upperIdx) + (gap < obj.unitHeight / 2 ? 1 : 0)) ? -1 : 1;
+    const value = (gap < obj.unitHeight / 2 ? gap : obj.unitHeight - gap);
+    this.updateYPosition(obj.moveIdx, sign * value);
+    // update focused -- 오버랩된 애들 찾아야 함.
   }
 
   private isFocused(idx: number) {
