@@ -524,20 +524,25 @@ export default class SubDisplay extends Vue {
         (enter: any) => enter
           .append('rect')
           .attr('class', 'focusedItem')
-          .attr('x', (d: SubDisplayFocusedItem) => 1)
+          .attr('x', (d: SubDisplayFocusedItem) => d.score < 0 ?
+            this.subDisplaySVG.width / 2 - (this.options.gap / 2) * (Math.abs(d.score) / this.maxFocusedScore) - 0.5:
+            this.subDisplaySVG.width / 2 + 1 + 0.5)
           .attr('y', (d: SubDisplayFocusedItem, i: number) =>
-            this.focusedItem.length === 0 ? 0: i * (this.overlap[1] - this.overlap[0]) / this.focusedItem.length
+            this.focusedItem.length === 0 ? 0: this.overlap[0] + i * (this.overlap[1] - this.overlap[0]) / this.focusedItem.length
           )
           .attr('width', (d: SubDisplayFocusedItem) =>
-            this.focusedItem.length === 0 ? 0: this.options.gap * (Math.abs(d.score) / this.maxFocusedScore)
+            this.focusedItem.length === 0 ? 0: (this.options.gap / 2) * (Math.abs(d.score) / this.maxFocusedScore)
           )
           .attr('height', this.focusedItem.length === 0 ?
-            0 : (this.overlap[1] - this.overlap[0]) / this.focusedItem.length)
+            0 : (this.overlap[1] - this.overlap[0]) / (this.focusedItem.length))
           .attr('fill', this.$store.state.displayMetric.metricPalette[
             this.$store.state.displayMetric.focusedMetricIdx
             ])
           .attr('fill-opacity', 0.9)
-          .attr('stroke', '#fff'),
+          .attr('stroke', shadeColor(this.$store.state.displayMetric.metricPalette[
+            this.$store.state.displayMetric.focusedMetricIdx
+            ], -30
+          )),
         (exit: any) => exit
           .on('end', function () {
             // @ts-ignore
