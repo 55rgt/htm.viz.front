@@ -30,13 +30,13 @@ export interface SubDisplayBar extends Rect {
   color: string;
 }
 
-export interface SubDisplayBarUnit extends Rect {
-  unitIndex: number;
-}
+export interface SubDisplayBarUnit extends Rect { }
 
 export interface SubDisplayItem extends Rect {
   isSelected: boolean;
-  count: number;
+  metric: number; // 나중에 string 으로 바꿔야 함.
+  rank: number; // 가운데로부터 얼마나 가까운지
+  unitIndex: number; // y 축 인덱스
+  score: number;
   color: string;
-  unitIndex: number;
 }

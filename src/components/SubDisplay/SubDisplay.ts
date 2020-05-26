@@ -47,9 +47,10 @@ export default class SubDisplay extends Vue {
 
   private items: [SubDisplayItem[], SubDisplayItem[]] = [[], []];
 
+  private maxUnitScore: number = -1;
+
   private tempCallSubGraph() {
     eventBus.$emit('updateSubGraph');
-    console.log(this.$store.state.displayMetric);
     this.initialize();
     this.remove();
     this.drawElements();
@@ -66,7 +67,6 @@ export default class SubDisplay extends Vue {
             (obj: number, src: number) => (_.isNumber(obj) ? obj + src : src))
           .entries()
           .map((k) => ({ metric: +k[0], score: k[1] }))
-          // sortBy specific criterion
           .value(),
       }))
       .value();
@@ -77,13 +77,15 @@ export default class SubDisplay extends Vue {
     const bar = barIndex === BarIdx.LEFT ? this.bars[BarIdx.LEFT] : this.bars[BarIdx.RIGHT];
     const unit = barIndex === BarIdx.LEFT ? this.units[BarIdx.LEFT] : this.units[BarIdx.RIGHT];
 
-    return _.times(this.units[barIndex].length, (i) => ({
-      x: bar.x,
-      y: bar.y + i * (bar.height / unit.length),
-      width: bar.width,
-      height: bar.height / unit.length,
-      unitIndex: i,
-    }));
+    return _.chain(this.units[barIndex].length)
+      .times( (i) => ({
+        x: bar.x,
+        y: bar.y + i * (bar.height / unit.length),
+        width: bar.width,
+        height: bar.height / unit.length,
+      }))
+      .orderBy(['y'], ['asc'])
+      .value();
   }
 
   private initialize() {
@@ -127,16 +129,61 @@ export default class SubDisplay extends Vue {
       color: '#edb6d3',
     }];
 
-    this.barUnits = [
-      this.getBarUnit(BarIdx.LEFT),
-      this.getBarUnit(BarIdx.RIGHT),
-    ];
+    this.barUnits = [this.getBarUnit(BarIdx.LEFT), this.getBarUnit(BarIdx.RIGHT)];
 
     console.log(this.barUnits);
 
     // units 돌면서 제일 긴 애 측정하기.
+    this.maxUnitScore = _.chain(this.units)
+      .flatten()
+      .map((d) => _.sumBy(d.metrics, e => e.score))
+      .max()
+      .value();
+
+    console.log(`maxUnitLength: ${this.maxUnitScore}`);
 
     // subDisplayItem 만들기
+    this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
+
+    console.log(this.items);
+  }
+
+  /*
+    [item의 업데이트 하는 함수 - 1) sort, 2) select]
+    -item을 metricsOrder 대로 정렬
+    -for문 돌면서 rank와 isSelected 업데이트 한다.
+    -x축 업데이트 .
+    [x축 업데이트 하는 방식: unitIndex가 같고, selected 되고, rank가 자기 자신 이하인 애들의 스코어 총합으로 계산하기.
+   */
+
+  private getItem(barIndex: BarIdx) {
+    return _.chain(this.units[barIndex])
+      .map((d) => d.metrics)
+      .reduce((result, datum, unitIndex) => {
+        const sorted = _.sortBy(datum, (item) => this.$store.state.displayMetric.metricsOrder.indexOf(item.metric));
+        _.forEach(sorted, (d, rank) => {
+          result.push({
+            x: barIndex === BarIdx.LEFT ?
+              -1 + this.bars[barIndex].x - ((this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2)
+              * _.chain(sorted).slice(0, rank + 1).sumBy('score').value()) / this.maxUnitScore
+              : this.bars[barIndex].x + this.options.barWidth + 1 +
+              ((this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2) *
+              _.chain(sorted).slice(0, rank + 1).sumBy('score').value()) / this.maxUnitScore,
+            y: this.barUnits[barIndex][unitIndex].y,
+            metric: d.metric,
+            rank: rank,
+            unitIndex: unitIndex,
+            width: d.score * (this.bars[barIndex].x - (this.options.barWidth + this.options.margin.x) / 2)
+            / this.maxUnitScore,
+            height: this.barUnits[barIndex][unitIndex].height,
+            color: this.$store.state.displayMetric.metricPalette[d.metric],
+            isSelected: this.$store.state.displayMetric.selectedMetrics.indexOf(d.metric) !== -1,
+            score: d.score,
+          });
+        });
+        return result;
+      }, [] as SubDisplayItem[])
+      .value();
   }
 
   private remove() {
@@ -157,18 +204,23 @@ export default class SubDisplay extends Vue {
     const leftBarUnits = left.append('g')
       .attr('class', 'leftBar');
 
-    leftBarUnits
+    const leftItems = left.append('g')
+      .attr('class', 'leftItemList');
+
+    leftItems
       .selectAll('rect')
-      .data(this.barUnits[BarIdx.LEFT])
+      .data(this.items[BarIdx.LEFT])
       .join(
         (enter: any) => enter
           .append('rect')
-          .attr('class', 'barUnit')
-          .attr('x', (d: SubDisplayBarUnit) => d.x)
-          .attr('y', (d: SubDisplayBarUnit) => d.y)
-          .attr('width', (d: SubDisplayBarUnit) => d.width)
-          .attr('height', (d: SubDisplayBarUnit) => d.height)
-          .attr('fill', this.bars[BarIdx.LEFT].color),
+          .attr('class', 'leftItem')
+          .attr('x', (d: SubDisplayItem) => d.x)
+          .attr('y', (d: SubDisplayItem) => d.y)
+          .attr('width', (d: SubDisplayItem) => d.width)
+          .attr('height', (d: SubDisplayItem) => d.height)
+          .attr('fill', (d: SubDisplayItem) => d.color)
+          .attr('fill-opacity', 0.9)
+          .attr('stroke', shadeColor(this.bars[BarIdx.LEFT].color, 20)),
         (exit: any) => exit
           .on('end', function () {
             // @ts-ignore
@@ -176,7 +228,27 @@ export default class SubDisplay extends Vue {
           })
       );
 
-    d3.selectAll('.barUnit')
+    leftBarUnits
+      .selectAll('rect')
+      .data(this.barUnits[BarIdx.LEFT])
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'leftBarUnit')
+          .attr('x', (d: SubDisplayBarUnit) => d.x)
+          .attr('y', (d: SubDisplayBarUnit) => d.y)
+          .attr('width', (d: SubDisplayBarUnit) => d.width)
+          .attr('height', (d: SubDisplayBarUnit) => d.height)
+          .attr('fill', this.bars[BarIdx.LEFT].color)
+          .attr('stroke', shadeColor(this.bars[BarIdx.LEFT].color, -40)),
+        (exit: any) => exit
+          .on('end', function () {
+            // @ts-ignore
+            d3.select(this).remove();
+          })
+      );
+
+    d3.selectAll('.leftBarUnit')
       // @ts-ignore
       .call(d3.drag()
         .on('start', function () {
@@ -195,17 +267,53 @@ export default class SubDisplay extends Vue {
     const right = svg.append('g')
       .attr('id', 'rightDisplay');
 
-    const rightBar = right.append('g');
+    const rightItems = left.append('g')
+      .attr('class', 'rightItemList');
 
-    rightBar.append('rect')
-      .attr('id', 'rightBar')
-      .attr('x', this.bars[BarIdx.RIGHT].x)
-      .attr('y', this.bars[BarIdx.RIGHT].y)
-      .attr('width', this.bars[BarIdx.RIGHT].width)
-      .attr('height', this.bars[BarIdx.RIGHT].height)
-      .attr('fill', this.bars[BarIdx.RIGHT].color);
+    rightItems
+      .selectAll('rect')
+      .data(this.items[BarIdx.RIGHT])
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'rightItem')
+          .attr('x', (d: SubDisplayItem) => d.x)
+          .attr('y', (d: SubDisplayItem) => d.y)
+          .attr('width', (d: SubDisplayItem) => d.width)
+          .attr('height', (d: SubDisplayItem) => d.height)
+          .attr('fill', (d: SubDisplayItem) => d.color)
+          .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40)),
+        (exit: any) => exit
+          .on('end', function () {
+            // @ts-ignore
+            d3.select(this).remove();
+          })
+      );
 
-    d3.select('#rightBar')
+    const rightBarUnits = right.append('g')
+      .attr('class', 'rightBar');
+
+    rightBarUnits
+      .selectAll('rect')
+      .data(this.barUnits[BarIdx.RIGHT])
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'rightBarUnit')
+          .attr('x', (d: SubDisplayBarUnit) => d.x)
+          .attr('y', (d: SubDisplayBarUnit) => d.y)
+          .attr('width', (d: SubDisplayBarUnit) => d.width)
+          .attr('height', (d: SubDisplayBarUnit) => d.height)
+          .attr('fill', this.bars[BarIdx.RIGHT].color)
+          .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40)),
+        (exit: any) => exit
+          .on('end', function () {
+            // @ts-ignore
+            d3.select(this).remove();
+          })
+      );
+
+    d3.selectAll('.rightBarUnit')
       // @ts-ignore
       .call(d3.drag()
         .on('start', function () {
@@ -236,12 +344,17 @@ export default class SubDisplay extends Vue {
     || this.bars[barIndex].y + this.bars[barIndex].height + delta
       > this.subDisplaySVG.height - this.options.margin.y / 2) return;
 
-    let id = '';
     this.bars[barIndex].y += delta;
     _.forEach(this.barUnits[barIndex], (d) => d.y += delta);
-    barIndex === 0 ? id = '#leftBar' : id = '#rightBar';
-    d3.select(id).attr('y', () => this.bars[barIndex].y);
-    d3.selectAll('.barUnit').each(function (d: any, i) {
+    const s = (barIndex === 0 ? {
+      id: '#leftBar',
+      unitClass: '.leftBarUnit',
+    } : {
+      id: '#rightBar',
+      unitClass: '.rightBarUnit',
+    });
+    d3.select(s.id).attr('y', () => this.bars[barIndex].y);
+    d3.selectAll(s.unitClass).each(function (d: any) {
       d3.select(this).attr('y', d.y);
     })
 
