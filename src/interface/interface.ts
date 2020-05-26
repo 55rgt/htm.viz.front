@@ -16,7 +16,12 @@ export interface SubDisplayDaily {
 
 export interface SubDisplayUnit {
   dayIndexes: number[];
+  unitIndex: number;
   metrics: { metric: number; score: number; }[];
+}
+
+export interface SubDisplayFocusedItem {
+  score: number;
 }
 
 export interface Rect {
@@ -30,7 +35,9 @@ export interface SubDisplayBar extends Rect {
   color: string;
 }
 
-export interface SubDisplayBarUnit extends Rect { }
+export interface SubDisplayBarUnit extends Rect {
+  unitIndex: number;
+}
 
 export interface SubDisplayItem extends Rect {
   isSelected: boolean;

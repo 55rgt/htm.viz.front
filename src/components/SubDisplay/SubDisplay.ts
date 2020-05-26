@@ -4,7 +4,8 @@ import { eventBus } from '@/utils/event-bus';
 import { shadeColor } from '@/utils/color-controller';
 import getDaily from '@/utils/data-generator';
 import {
-  SubDisplayDaily, SubDisplayUnit, SubDisplayBar, SVG, SubDisplayBarUnit, SubDisplayItem
+  SubDisplayDaily, SubDisplayUnit, SubDisplayBar, SVG, SubDisplayBarUnit, SubDisplayItem,
+  SubDisplayFocusedItem,
 } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
@@ -37,17 +38,24 @@ export default class SubDisplay extends Vue {
     },
   };
 
-  private bars!: [SubDisplayBar, SubDisplayBar];
-
   private dailyLists: [SubDisplayDaily[], SubDisplayDaily[]] = [[], []];
 
   private units: [SubDisplayUnit[], SubDisplayUnit[]] = [[], []];
 
+  private bars!: [SubDisplayBar, SubDisplayBar];
+
   private barUnits: [SubDisplayBarUnit[], SubDisplayBarUnit[]] = [[], []];
+
+  private maxUnitScore: number = -1;
 
   private items: [SubDisplayItem[], SubDisplayItem[]] = [[], []];
 
-  private maxUnitScore: number = -1;
+  private focusedItem: SubDisplayFocusedItem[] = [];
+
+  private maxFocusedScore: number = -1;
+
+  private overlap: [number, number] = [0, 0];
+
 
   private tempCallSubGraph() {
     eventBus.$emit('updateSubGraph');
@@ -62,6 +70,7 @@ export default class SubDisplay extends Vue {
       .groupBy((d) => Math.floor(d.dayIndex / this.$store.state.dayUnit))
       .map((d: SubDisplayDaily[]) => ({
         dayIndexes: _.map(d, (e: SubDisplayDaily) => e.dayIndex),
+        unitIndex: Math.floor(d[0].dayIndex / this.$store.state.dayUnit),
         metrics: _.chain({})
           .mergeWith(...(_.map(d, (e: SubDisplayDaily) => e.metrics)),
             (obj: number, src: number) => (_.isNumber(obj) ? obj + src : src))
@@ -83,6 +92,7 @@ export default class SubDisplay extends Vue {
         y: bar.y + i * (bar.height / unit.length),
         width: bar.width,
         height: bar.height / unit.length,
+        unitIndex: i,
       }))
       .orderBy(['y'], ['asc'])
       .value();
@@ -138,6 +148,10 @@ export default class SubDisplay extends Vue {
 
     // subDisplayItem 만들기
     this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
+
+    this.focusedItem = [];
+
+    this.overlap = [0, 0];
   }
 
   /*
@@ -192,6 +206,40 @@ export default class SubDisplay extends Vue {
       .attr('width', this.subDisplaySVG.width)
       .attr('height', this.subDisplaySVG.height);
 
+    const focused = svg.append('g')
+      .attr('class', 'focused');
+    //
+    // focused
+    //   .selectAll('rect')
+    //   .data(this.focusedItem)
+    //   .join(
+    //     (enter: any) => enter
+    //       .append('rect')
+    //       .attr('class', 'focusedItem')
+    //       .attr('x', (d: SubDisplayFocusedItem) =>
+    //         this.focusedItem.length === 0 ? 0: d.score < 0 ?
+    //           this.subDisplaySVG.width / 2 - this.options.gap * (d.score / this.maxFocusedScore) - 1 :
+    //           this.subDisplaySVG.width / 2 + 1)
+    //       .attr('y', (d: SubDisplayFocusedItem, i: number) =>
+    //         this.focusedItem.length === 0 ? 0: i * (this.overlap[1] - this.overlap[0]) / this.focusedItem.length
+    //       )
+    //       .attr('width', (d: SubDisplayFocusedItem) =>
+    //         this.focusedItem.length === 0 ? 0: this.options.gap * (d.score / this.maxFocusedScore)
+    //       )
+    //       .attr('height', this.focusedItem.length === 0 ?
+    //         0 : (this.overlap[1] - this.overlap[0]) / this.focusedItem.length)
+    //       .attr('fill', this.$store.state.displayMetric.metricPalette[
+    //         this.$store.state.displayMetric.focusedMetricIdx
+    //         ])
+    //       .attr('fill-opacity', 0.9)
+    //       .attr('stroke', '#fff'),
+    //     (exit: any) => exit
+    //       .on('end', function () {
+    //         // @ts-ignore
+    //         d3.select(this).remove();
+    //       })
+    //   );
+
     const left = svg.append('g')
       .attr('id', 'leftDisplay');
 
@@ -220,7 +268,10 @@ export default class SubDisplay extends Vue {
             // @ts-ignore
             d3.select(this).remove();
           })
-      );
+      )
+      .on('click', function(d) {
+        console.log(d);
+      });
 
     leftBarUnits
       .selectAll('rect')
@@ -283,7 +334,10 @@ export default class SubDisplay extends Vue {
             // @ts-ignore
             d3.select(this).remove();
           })
-      );
+      )
+      .on('click', function(d) {
+        console.log(d);
+      });
 
     const rightBarUnits = right.append('g')
       .attr('class', 'rightBar');
@@ -377,7 +431,120 @@ export default class SubDisplay extends Vue {
     const sign = [1, 2, 4, 7].includes(4 * (1 - obj.moveIdx) + 2 * (1 - obj.upperIdx) + (gap < obj.unitHeight / 2 ? 1 : 0)) ? -1 : 1;
     const value = (gap < obj.unitHeight / 2 ? gap : obj.unitHeight - gap);
     this.updateYPosition(obj.moveIdx, sign * value);
-    // update focused -- 오버랩된 애들 찾아야 함.
+
+    this.overlap = this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ?
+      [this.bars[BarIdx.RIGHT].y, this.bars[BarIdx.LEFT].y + this.bars[BarIdx.LEFT].height] :
+      [this.bars[BarIdx.LEFT].y, this.bars[BarIdx.RIGHT].y + this.bars[BarIdx.RIGHT].height];
+
+    this.getFocusedItem();
+
+    // update focused -- 오버랩된 애들찾아야 함.
+    /*
+    1. 겹치는 구간 파악하기
+    2. units 에서 각각 해당 구간의 dayIndex 파악을 해서 pair로 묶음
+    3. pair로 묶은 걸로 데이터를 만든다.
+     */
+  }
+
+  private getFocusedItem() {
+
+    const that = this;
+
+    const unitIndexes = _.times(2, (n) => _.chain(this.barUnits[n])
+      .filter((d: SubDisplayBarUnit) => d.y >= this.overlap[0] && d.y + d.height <= this.overlap[1])
+      .map(d => d.unitIndex)
+      .value());
+
+    this.$store.state.displayMetric.focusedDayIndexes = _.times(2, (n) =>
+      _.chain(this.units[n])
+        .filter((d: SubDisplayUnit) => unitIndexes[n].includes(d.unitIndex))
+        .map((d) => d.dayIndexes)
+        .flattenDeep()
+        .value()
+        .sort()
+    );
+
+    const dayIndexes = this.$store.state.displayMetric.focusedDayIndexes;
+
+    const maxLength = Math.max(dayIndexes[0].length, dayIndexes[1].length);
+
+    console.log(dayIndexes);
+    console.log(maxLength);
+
+    let result: SubDisplayFocusedItem[] = [];
+
+    _.times(maxLength, (n) => {
+      const leftDaily: undefined | SubDisplayDaily = _.isNil(dayIndexes[BarIdx.LEFT][n]) ? undefined :
+        _.find(this.dailyLists[BarIdx.LEFT], (d: SubDisplayDaily) => d.dayIndex === dayIndexes[BarIdx.LEFT][n]);
+      const rightDaily: undefined | SubDisplayDaily = _.isNil(dayIndexes[BarIdx.RIGHT][n]) ? undefined :
+        _.find(this.dailyLists[BarIdx.RIGHT], (d: SubDisplayDaily) => d.dayIndex === dayIndexes[BarIdx.RIGHT][n]);
+      if (_.isNil(leftDaily)) {
+        if(_.isNil(rightDaily)) {
+          console.log('error')
+        } else {
+          let metric = rightDaily.metrics[this.$store.state.displayMetric.focusedMetricIdx];
+          if (_.isNil(metric)) {
+            metric = 0;
+          }
+          result.push({
+            score: metric,
+          })
+        }
+      } else if (_.isNil(rightDaily)) {
+        let metric = leftDaily.metrics[this.$store.state.displayMetric.focusedMetricIdx];
+        if (_.isNil(metric)) {
+          metric = 0;
+        }
+        result.push({
+          score: -metric,
+        })
+      } else {
+        let left = leftDaily.metrics[this.$store.state.displayMetric.focusedMetricIdx];
+        if (_.isNil(left)) {
+          left = 0;
+        }
+        let right = rightDaily.metrics[this.$store.state.displayMetric.focusedMetricIdx];
+        if (_.isNil(right)) {
+          right = 0;
+        }
+        result.push({
+          score: right - left,
+        });
+      }
+    });
+    this.focusedItem = result;
+    this.maxFocusedScore = _.chain(this.focusedItem).map(d => Math.abs(d.score)).max().value();
+    console.log(_.map(this.focusedItem, d => d.score));
+
+    const a = d3.select('.focused');
+    a
+      .selectAll('rect')
+      .data(this.focusedItem)
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'focusedItem')
+          .attr('x', (d: SubDisplayFocusedItem) => 1)
+          .attr('y', (d: SubDisplayFocusedItem, i: number) =>
+            this.focusedItem.length === 0 ? 0: i * (this.overlap[1] - this.overlap[0]) / this.focusedItem.length
+          )
+          .attr('width', (d: SubDisplayFocusedItem) =>
+            this.focusedItem.length === 0 ? 0: this.options.gap * (Math.abs(d.score) / this.maxFocusedScore)
+          )
+          .attr('height', this.focusedItem.length === 0 ?
+            0 : (this.overlap[1] - this.overlap[0]) / this.focusedItem.length)
+          .attr('fill', this.$store.state.displayMetric.metricPalette[
+            this.$store.state.displayMetric.focusedMetricIdx
+            ])
+          .attr('fill-opacity', 0.9)
+          .attr('stroke', '#fff'),
+        (exit: any) => exit
+          .on('end', function () {
+            // @ts-ignore
+            d3.select(this).remove();
+          })
+      );
+
   }
 
   private isFocused(idx: number) {
