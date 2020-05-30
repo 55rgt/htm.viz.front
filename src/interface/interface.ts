@@ -5,6 +5,12 @@ export interface SVG {
   svg: any;
 }
 
+export interface sortOptions {
+  priority: number;
+  metric: string;
+  order: 'asc' | 'desc';
+}
+
 export interface SubDisplayDaily {
   dayIndex: number;
   date: string;
