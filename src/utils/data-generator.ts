@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import { BasicObject } from '@/interface/interface';
 
 const getSubDisplayDaily = (
   m: [number, number], // metric 종류의 개수

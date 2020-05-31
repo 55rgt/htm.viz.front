@@ -5,10 +5,42 @@ export interface SVG {
   svg: any;
 }
 
-export interface sortOptions {
+export interface SortOptionItem {
   priority: number;
   metric: string;
   order: 'asc' | 'desc';
+}
+
+export interface FilterOption {
+  startDate: [string, string];
+  endDate: [string, string];
+  showMax: number;
+}
+
+export interface WeightController {
+  [metric: string]: number;
+}
+
+export interface MetricPerUnit {
+  [metric: string]: [number, number];
+}
+
+export interface BasicObject {
+  parentID: string;
+  date: string;
+  dateIndex: number;
+  metrics: {
+    [metric: string]: number;
+  }
+}
+
+export interface UnitObject {
+  parentID: string;
+  dateIndexes: number[];
+  unitIndex: number;
+  metrics: {
+    [metric: string]: number;
+  }
 }
 
 export interface SubDisplayDaily {
@@ -53,3 +85,5 @@ export interface SubDisplayItem extends Rect {
   score: number;
   color: string;
 }
+
+
