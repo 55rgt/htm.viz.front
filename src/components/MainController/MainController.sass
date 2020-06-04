@@ -16,6 +16,61 @@
     .controller-body
       width: 100%
       height: calc(100% - 18px)
+      .controller-sort-list
+        width: 100%
+        height: 100%
+        overflow-y: scroll
+        padding-top: 1px
+        &::-webkit-scrollbar
+          display: none
+          width: 0
+          background: transparent
+        .controller-sort
+          width: 100%
+          height: 38px
+          padding: 4px
+          display: flex
+          border-top: 1px solid #aaa
+          border-bottom: 1px solid #aaa
+          .controller-dropdown
+            width: 120px
+            height: 100%
+            margin-right: 4px
+            position: relative
+            .drop-down
+              position: absolute
+              right: 4px
+              transform: scale(0.75)
+              transform-origin: top
+          .controller-buttons
+            width: 92px
+            height: 100%
+            border: 1px solid black
+            margin-right: 4px
+          .controller-delete
+            width: 30px
+            height: 100%
+            border: 1px solid black
+
+      .date-unit-container
+        width: 100%
+        height: 30px
+        padding-left: 8px
+        line-height: 30px
+      .metrics-container
+        width: 100%
+        height: calc(100% - 30px)
+        display: inline-flex
+        flex-wrap: wrap
+        overflow-y: scroll
+        &::-webkit-scrollbar
+          display: none
+          width: 0
+          background: transparent
+        .metric-container
+          width: 50%
+          height: 28px
+          border: 1px solid black
   .controller-empty
     border: 0.5px dashed #aaa
 

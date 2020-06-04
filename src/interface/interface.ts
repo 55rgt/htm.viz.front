@@ -30,8 +30,28 @@ export interface BasicObject {
   date: string;
   dateIndex: number;
   metrics: {
-    [metric: string]: number;
-  }
+    clicks: number;
+    cpc: number;
+    cpm: number;
+    ctr: number;
+    frequency: number;
+    impressions: number;
+    reach: number;
+    unique_clicks: number;
+    unique_ctr: number;
+  };
+  action_values: {
+    [action_type: string]: number;
+  };
+  actions: {
+    [action_type: string]: number;
+  };
+  cost_per_action_type: {
+    [action_type: string]: number;
+  };
+  unique_actions: {
+    [action_type: string]: number;
+  };
 }
 
 export interface UnitObject {

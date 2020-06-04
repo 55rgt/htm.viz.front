@@ -5,10 +5,9 @@ import { eventBus } from '@/utils/event-bus';
 
 })
 export default class NavWeight extends Vue {
+  private min = 0;
 
-  created() {
-    eventBus.$on('initialize', () => {});
+  private max = 2;
 
-    eventBus.$on('updateData', () => {});
-  }
+  private slider = 1;
 }
