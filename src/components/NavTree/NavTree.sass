@@ -1,9 +1,7 @@
 .tree-container
   width: 100%
-  height: 473px
-  border: 1px solid #aaa
-  border-radius: 3px
-  margin-bottom: 8px
+  height: 515px
+  margin-bottom: 16px
   .tree-controller-wrapper
     width: 100%
     height: 52px
@@ -39,4 +37,34 @@
             border-right: none
   .tree-display
     width: 100%
-    height: calc(100% - 52px)
+    height: calc(100% - 42px)
+    border: 1px solid #aaa
+    border-radius: 3px
+    margin-bottom: 8px
+    .tree-header
+      width: 100%
+      padding: 8px
+      height: 32px
+      color: #777
+      font-size: 13px
+    .tree-body
+      width: 100%
+      height: calc(100% - 24px - 8px)
+      overflow-y: scroll
+      margin-bottom: 8px
+      &::-webkit-scrollbar
+        display: none
+        width: 0
+        background: transparent
+      .tree-item
+        width: 100%
+        height: 37px
+        border-top: 1px solid #aaa
+        padding-left: 8px
+        padding-top: 6px
+        &:nth-last-child(1)
+          border-bottom: 1px solid #aaa
+        &::v-deep .v-label
+          color: #777
+          font-size: 13px
+          text-transform: capitalize

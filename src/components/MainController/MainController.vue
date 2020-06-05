@@ -10,16 +10,22 @@
       <div class="controller-body">
         <div class="controller-sort-list">
           <div class="controller-sort">
+            <div class="sort-index"> 1. </div>
             <div class="controller-dropdown">
               <v-select class="drop-down"
-                :items="dropdown_icon"
-                label=""
+                :items="this.$store.state.totalMetrics"
+                label=" "
                 dense
                 height="28px"
               ></v-select>
             </div>
-            <div class="controller-buttons"></div>
-            <div class="controller-delete"></div>
+            <div class="controller-buttons">
+              <div class="controller-button"> asc </div>
+              <div class="controller-button"> desc </div>
+            </div>
+            <div class="controller-delete">
+              <font-awesome-icon class="delete-icon" :icon="['fas', 'trash']"/>
+            </div>
           </div>
         </div>
       </div>
@@ -28,7 +34,7 @@
     <div class="controller-grid ma-3-left">
       <div class="controller-header pa-4-left"> Node Configuration </div>
       <div class="controller-body">
-        <div class="date-unit-container"></div>
+        <div class="date-unit-container"> Date Unit </div>
         <div class="metrics-container">
         </div>
       </div>

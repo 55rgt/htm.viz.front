@@ -2,14 +2,14 @@
   <div class="weight-container">
     <div class="weight-header"> Weight Controller</div>
     <div class="weight-item-list">
-      <div v-for="n in 10" :key="n" class="weight-item">
-        <div class="weight-metric-name"> Metric {{ n }}</div>
+      <div v-for="n in this.$store.state.totalMetrics" :key="n" class="weight-item">
+        <div class="weight-metric-name"> {{ n }} </div>
         <label>
-          <input step=0.01 v-model="slider" class="weight-input">
+          <input step="0.01" v-model="controller[n]" class="weight-input">
         </label>
         <div class="weight-slider">
           <v-slider
-            v-model="slider"
+            v-model="controller[n]"
             class="align-center"
             :max="max"
             :min="min"
