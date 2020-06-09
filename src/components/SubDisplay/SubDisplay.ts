@@ -233,11 +233,13 @@ export default class SubDisplay extends Vue {
     //         ])
     //       .attr('fill-opacity', 0.9)
     //       .attr('stroke', '#fff'),
+    //     (update: any) =>
     //     (exit: any) => exit
     //       .on('end', function () {
     //         // @ts-ignore
     //         d3.select(this).remove();
     //       })
+          //  .transition('size', d.size)
     //   );
 
     const left = svg.append('g')

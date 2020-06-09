@@ -1,6 +1,6 @@
 <template>
   <div class="item-wrapper">
-    <div class="item-container"></div>
+    <div class="item-container" ref="radarChart" :id="this.classID"></div>
   </div>
 </template>
 

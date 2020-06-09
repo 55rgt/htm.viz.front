@@ -1,6 +1,6 @@
 <template>
   <v-container class="pa-0 ma-0" fluid>
-    <Navigator/>
+    <Nav/>
     <MainView/>
     <SubView/>
   </v-container>
