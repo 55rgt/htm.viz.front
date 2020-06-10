@@ -5,6 +5,12 @@ export interface SVG {
   svg: any;
 }
 
+export interface Circle {
+  cx: number;
+  cy: number;
+  r: number;
+}
+
 export interface SortOptionItem {
   priority: number;
   metric: string;

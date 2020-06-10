@@ -1,5 +1,5 @@
 import { Vue, Component, Prop } from 'vue-property-decorator';
-import { SVG } from '@/interface/interface';
+import { SVG, Circle } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
 
@@ -7,14 +7,16 @@ import * as d3 from 'd3';
 export default class MainItem extends Vue {
   private radarChartSVG!: SVG;
 
-  private circles: {
-    circleId: string;
-    x: number;
-    y: number;
-    radius: number;
-  }[] = [];
+  private innerCircles: Circle[] = [];
 
   @Prop(String) private classID!: string;
+
+  private testData = [
+    [[40, 97], [97, 40], [137, 97], [97, 137]],
+    [[40, 88], [80, 40], [141, 60], [147, 125], [82, 150]],
+  ];
+
+  private index = 1;
 
   public $refs!: {
     radarChart: HTMLElement;
@@ -28,23 +30,11 @@ export default class MainItem extends Vue {
       svg: null,
     };
 
-    this.updateData();
-  }
-
-  private updateData() {
-    const number = Math.floor(Math.random() * 5) + 1;
-    this.circles = [];
-    for (let i = 0; i <= number; i += 1) {
-      const radius = Math.floor(Math.random() * 10) + 5;
-      this.circles.push({
-        circleId: `circle_${i}`,
-        x: Math.floor(Math.random() * (this.radarChartSVG.width - 2 * radius)),
-        y: Math.floor(Math.random() * (this.radarChartSVG.height - 2 * radius)),
-        radius,
-      });
-    }
-    console.log('update Data');
-    this.updateElements();
+    this.innerCircles = _.times(4, (idx: number) => ({
+      cx: this.radarChartSVG.width / 2,
+      cy: this.radarChartSVG.height / 2 - 15,
+      r: ((idx + 1) * (this.radarChartSVG.width / 2 - 20)) / 4,
+    }));
   }
 
   private mounted() {
@@ -57,30 +47,96 @@ export default class MainItem extends Vue {
     d3.select(`#${this.radarChartSVG.svgID}`).remove();
   }
 
-  private updateElements() {
-    const t = d3.select(`#${this.classID} > svg`).transition().duration(750);
+  private updateItem() {
+    this.index = 1 - this.index;
 
-    d3.select(`#${this.classID} > svg`)
+    this.radarChartSVG.svg.select('.dots')
       .selectAll('circle')
-      .data(this.circles)
+      .data(this.testData[this.index])
       .join(
         (enter: any) => enter
-          .append('circle'),
+          .append('circle')
+          .attr('cx', this.radarChartSVG.width / 2)
+          .attr('cy', this.radarChartSVG.height / 2 - 15),
         (update: any) => update,
-        (exit: any) => exit.call((exit: any) => exit.transition(t).remove()),
+        (exit: any) => exit.call((exit: any) => exit.remove()),
       )
-      .attr('cx', (d: any) => d.x)
-      .attr('cy', (d: any) => d.y)
-      .attr('r', (d: any) => d.radius)
-      .attr('fill', '#e1c24f');
+      .on('mouseover', function (d: any) {
+        // @ts-ignore
+        d3.select(this).attr('r', 6);
+      })
+      .on('mouseout', function (d: any) {
+        // @ts-ignore
+        d3.select(this).attr('r', 4);
+      })
+      .transition()
+      .duration(300)
+      .attr('cx', (d: any) => d[0])
+      .attr('cy', (d: any) => d[1])
+      .attr('r', 4)
+      .attr('fill', 'pink');
+
+    const path = _.reduce(this.testData[this.index], (result, data, index) => {
+      let r = result;
+      if (index === 0) {
+        r += `M ${data[0]} ${data[1]}`;
+      } else if (index === this.testData[this.index].length - 1) {
+        r += `L ${data[0]} ${data[1]}`;
+        r += `L ${this.testData[this.index][0][0]} ${this.testData[this.index][0][1]}`;
+      } else {
+        r += `L ${data[0]} ${data[1]}`;
+      }
+      return r;
+    }, '');
+
+    this.radarChartSVG.svg.select('.radarPath')
+      .selectAll('path')
+      .data(this.testData[this.index])
+      .join(
+        (enter: any) => enter.append('path'),
+        (update: any) => update.transition()
+          .duration(300),
+        (exit: any) => exit.call((exit: any) => exit.remove()),
+      )
+      .transition()
+      .duration(300)
+      .attr('d', path)
+      .attr('stroke', 'pink')
+      .attr('stroke-width', 1.5)
+      .attr('fill', 'none');
   }
 
   private drawElements() {
-    const svg = d3.select(`#${this.classID}`)
+    this.radarChartSVG.svg = d3.select(`#${this.classID}`)
       .append('svg')
       .attr('id', this.radarChartSVG.svgID)
       .attr('width', this.radarChartSVG.width)
       .attr('height', this.radarChartSVG.height);
-    this.updateElements();
+
+    // inner circles
+    const innerCircles = this.radarChartSVG.svg.append('g').attr('class', 'innerCircles');
+
+    // dots
+    this.radarChartSVG.svg.append('g').attr('class', 'dots');
+
+    // path
+    this.radarChartSVG.svg.append('g').attr('class', 'radarPath');
+
+    innerCircles
+      .selectAll('circle')
+      .data(this.innerCircles)
+      .join(
+        (enter: any) => enter
+          .append('circle'),
+        (update: any) => update,
+        (exit: any) => exit,
+      )
+      .attr('cx', (d: any) => d.cx)
+      .attr('cy', (d: any) => d.cy)
+      .attr('r', (d: any) => d.r)
+      .attr('fill', 'none')
+      .attr('stroke', 'silver')
+      .attr('stroke-dasharray', ('3 3'));
+    this.updateItem();
   }
 }
