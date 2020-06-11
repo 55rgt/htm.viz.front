@@ -38,8 +38,6 @@ export default class MainItem extends Vue {
     [[40, 88], [80, 40], [141, 60], [147, 125], [82, 150]],
   ];
 
-  private index = 1;
-
   public $refs!: {
     radarChart: HTMLElement;
   };
@@ -70,7 +68,6 @@ export default class MainItem extends Vue {
       .map((d) => d.metrics)
       .value());
 
-
     this.totalRadarChart = _.chain(totalDistribution)
       .entries()
       .filter((d) => this.$store.state.selectedMetrics.indexOf(d[0]) !== -1)
@@ -81,6 +78,7 @@ export default class MainItem extends Vue {
       .orderBy((d) => this.$store.state.selectedMetrics.indexOf(d.metric), ['asc'])
       .value();
 
+    this.focusedRadarChart = this.totalRadarChart;
   }
 
   private created() {
@@ -96,12 +94,20 @@ export default class MainItem extends Vue {
     d3.select(`#${this.radarChartSVG.svgID}`).remove();
   }
 
-  private updateItem() {
-    this.index = 1 - this.index;
+  private getScoreRatio(key: string, value: number) {
+    const metric = this.$store.state.unitMetricPerUnit[key];
+    if (_.isNil(metric)) {
+      console.error('Error');
+      return -1;
+    }
+    return (metric[0] === metric[1] ?
+      1 : +((value - metric[0]) / (metric[1] - metric[0])).toFixed(2));
+  }
 
-    this.radarChartSVG.svg.select('.dots')
+  private updateItem() {
+    this.radarChartSVG.svg.select('.totalDots')
       .selectAll('circle')
-      .data(this.testData[this.index])
+      .data(this.totalRadarChart)
       .join(
         (enter: any) => enter
           .append('circle')
@@ -112,26 +118,52 @@ export default class MainItem extends Vue {
       )
       .on('mouseover', function (d: any) {
         // @ts-ignore
-        d3.select(this).attr('r', 6);
+        d3.select(this).attr('r', 4);
       })
       .on('mouseout', function (d: any) {
         // @ts-ignore
-        d3.select(this).attr('r', 4);
+        d3.select(this).attr('r', 3);
       })
       .transition()
       .duration(300)
-      .attr('cx', (d: any) => d[0])
-      .attr('cy', (d: any) => d[1])
-      .attr('r', 4)
+      .attr('cx', (d: RadarChart, i: number) => this.rotate(
+        {
+          x: this.center.cx,
+          y: this.center.cy - this.center.r * this.getScoreRatio(d.metric, d.value),
+        },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).x)
+      .attr('cy', (d: RadarChart, i: number) => this.rotate(
+        {
+          x: this.center.cx,
+          y: this.center.cy - this.center.r * this.getScoreRatio(d.metric, d.value),
+        },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).y)
+      .attr('r', 3)
       .attr('fill', 'pink');
 
-    const path = _.reduce(this.testData[this.index], (result, data, index) => {
+    const totalPathData = _.map(this.totalRadarChart, (d, i) => {
+      const point = this.rotate(
+        {
+          x: this.center.cx,
+          y: this.center.cy - this.center.r * this.getScoreRatio(d.metric, d.value),
+        },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      );
+      return [point.x, point.y];
+    });
+
+    const path = _.reduce(totalPathData, (result, data, index) => {
       let r = result;
       if (index === 0) {
         r += `M ${data[0]} ${data[1]}`;
-      } else if (index === this.testData[this.index].length - 1) {
+      } else if (index === totalPathData.length - 1) {
         r += `L ${data[0]} ${data[1]}`;
-        r += `L ${this.testData[this.index][0][0]} ${this.testData[this.index][0][1]}`;
+        r += `L ${totalPathData[0][0]} ${totalPathData[0][1]}`;
       } else {
         r += `L ${data[0]} ${data[1]}`;
       }
@@ -140,7 +172,7 @@ export default class MainItem extends Vue {
 
     this.radarChartSVG.svg.select('.radarPath')
       .selectAll('path')
-      .data(this.testData[this.index])
+      .data(totalPathData)
       .join(
         (enter: any) => enter.append('path'),
         (update: any) => update.transition()
@@ -152,19 +184,21 @@ export default class MainItem extends Vue {
       .attr('d', path)
       .attr('stroke', 'pink')
       .attr('stroke-width', 1.5)
-      .attr('fill', 'none');
+      .attr('fill', 'pink')
+      .attr('fill-opacity', 0.1);
   }
 
   private drawElements() {
+    // Append SVG
     this.radarChartSVG.svg = d3.select(`#${this.classID}`)
       .append('svg')
       .attr('id', this.radarChartSVG.svgID)
       .attr('width', this.radarChartSVG.width)
       .attr('height', this.radarChartSVG.height);
-    // inner circles
+    // Append Inner Circles
     const innerCircles = this.radarChartSVG.svg.append('g').attr('class', 'innerCircles');
 
-    // lines
+    // Append Lines
     const lines = this.radarChartSVG.svg.append('g').attr('class', 'lines');
 
     lines
@@ -189,11 +223,54 @@ export default class MainItem extends Vue {
       ).y)
       .attr('stroke-width', 1)
       .attr('stroke', 'silver');
-    // dots
-    this.radarChartSVG.svg.append('g').attr('class', 'dots');
 
-    // path
-    this.radarChartSVG.svg.append('g').attr('class', 'radarPath');
+    const texts = this.radarChartSVG.svg.append('g').attr('class', 'textList');
+
+    texts
+      .selectAll('text')
+      .data(this.$store.state.selectedMetrics)
+      .join(
+        (enter: any) => enter.append('text'),
+        (update: any) => update,
+        (exit: any) => exit,
+      )
+      .text((d: string) => d)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#555')
+      .attr('font-size', '10px')
+      .attr('x', (d: string, i: number) => this.rotate(
+        { x: this.center.cx, y: this.center.cy - this.center.r },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).x)
+      .attr('y', (d: string, i: number) => this.rotate(
+        { x: this.center.cx, y: this.center.cy - this.center.r },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).y)
+      .attr('dy', '-0.35em')
+      .attr('transform', (d: string, i: number) => {
+        const point = this.rotate(
+          { x: this.center.cx, y: this.center.cy - this.center.r },
+          { x: this.center.cx, y: this.center.cy },
+          i * (360 / this.$store.state.selectedMetrics.length),
+        );
+        return `translate(${point.x}, ${point.y})
+        rotate(${i * (360 / this.$store.state.selectedMetrics.length)})
+        translate(${-point.x}, ${-point.y})`;
+      });
+
+    // Append Total Dots
+    this.radarChartSVG.svg.append('g').attr('class', 'dots totalDots');
+
+    // Append Total Path
+    this.radarChartSVG.svg.append('g').attr('class', 'radarPath totalPath');
+
+    // Append Total Dots
+    this.radarChartSVG.svg.append('g').attr('class', 'dots focusedDots');
+
+    // Append Total Path
+    this.radarChartSVG.svg.append('g').attr('class', 'radarPath focusedPath');
 
     innerCircles
       .selectAll('circle')
