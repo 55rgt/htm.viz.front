@@ -82,6 +82,16 @@ export default class MainItem extends Vue {
       r: ((idx + 1) * this.center.r) / 4,
     }));
 
+    this.lensOption = {
+      xRange: [11, 181],
+      xThreshold: [11, 181],
+      sliderWidth: 5,
+      sliderHeight: 20,
+      isDown: false,
+      px: 0,
+      py: 0,
+    };
+
     this.totalUnitRange = [0, this.$store.state.unitData[this.idx].length - 1];
     this.focusedUnitRange = this.totalUnitRange;
 
@@ -223,7 +233,7 @@ export default class MainItem extends Vue {
       .attr('stroke', option.color)
       .attr('stroke-width', 1.5)
       .attr('fill', option.color)
-      .attr('fill-opacity', 0.1);
+      .attr('fill-opacity', 0.03);
   }
 
   private drawElements() {
@@ -273,7 +283,7 @@ export default class MainItem extends Vue {
         (update: any) => update,
         (exit: any) => exit,
       )
-      .text((d: string) => d)
+      .text((d: string) => (d.length < 12 ? d : `${d.substring(0, 9)}...`))
       .attr('text-anchor', 'middle')
       .attr('fill', '#555')
       .attr('font-size', '10px')
@@ -443,13 +453,13 @@ export default class MainItem extends Vue {
       .attr('stroke', 'silver')
       .attr('stroke-dasharray', ('3 3'));
 
-    // // update total charts
-    // this.updateItem({
-    //   dotSelector: '.totalDots',
-    //   data: this.totalRadarChart,
-    //   pathSelector: '.totalPath',
-    //   color: '#e055e0',
-    // });
+    // update total charts
+    this.updateItem({
+      dotSelector: '.totalDots',
+      data: this.totalRadarChart,
+      pathSelector: '.totalPath',
+      color: '#e055e0',
+    });
 
     // update focused charts
     this.updateItem({
