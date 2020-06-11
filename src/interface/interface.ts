@@ -27,6 +27,11 @@ export interface WeightController {
   [metric: string]: number;
 }
 
+export interface RadarChart {
+  metric: string;
+  value: number;
+}
+
 export interface MetricPerUnit {
   [metric: string]: [number, number];
 }

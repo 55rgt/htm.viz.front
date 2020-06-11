@@ -1,5 +1,8 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { Circle, SVG } from '@/interface/interface';
+import { eventBus } from '@/utils/event-bus';
+import {
+  Circle, SVG, UnitObject, RadarChart,
+} from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
 
@@ -8,6 +11,13 @@ export default class MainItem extends Vue {
   private radarChartSVG!: SVG;
 
   private innerCircles: Circle[] = [];
+
+  // 전체기간
+  private totalRadarChart: RadarChart[] = [];
+
+  // 선택 기간
+  private focusedRadarChart: RadarChart[] = [];
+
 
   private center: {
     cx: number;
@@ -20,6 +30,8 @@ export default class MainItem extends Vue {
   };
 
   @Prop(String) private classID!: string;
+
+  @Prop(Number) private idx!: number;
 
   private testData = [
     [[40, 97], [97, 40], [137, 97], [97, 137]],
@@ -51,12 +63,33 @@ export default class MainItem extends Vue {
       cy: this.center.cy,
       r: ((idx + 1) * this.center.r) / 4,
     }));
+
+    const totalDistribution: {
+     [metric: string]: number;
+    } = this.getAvg(_.chain(this.$store.state.unitData[this.idx])
+      .map((d) => d.metrics)
+      .value());
+
+
+    this.totalRadarChart = _.chain(totalDistribution)
+      .entries()
+      .filter((d) => this.$store.state.selectedMetrics.indexOf(d[0]) !== -1)
+      .map((d) => ({
+        metric: d[0],
+        value: d[1],
+      }))
+      .orderBy((d) => this.$store.state.selectedMetrics.indexOf(d.metric), ['asc'])
+      .value();
+
   }
 
-  private mounted() {
-    this.initialize();
-    this.remove();
-    this.drawElements();
+  private created() {
+    // 버그
+    eventBus.$on('updateView', () => {
+      this.initialize();
+      this.remove();
+      this.drawElements();
+    });
   }
 
   private remove() {
@@ -128,14 +161,12 @@ export default class MainItem extends Vue {
       .attr('id', this.radarChartSVG.svgID)
       .attr('width', this.radarChartSVG.width)
       .attr('height', this.radarChartSVG.height);
-
     // inner circles
     const innerCircles = this.radarChartSVG.svg.append('g').attr('class', 'innerCircles');
 
     // lines
-
     const lines = this.radarChartSVG.svg.append('g').attr('class', 'lines');
-    //
+
     lines
       .selectAll('line')
       .data(this.$store.state.selectedMetrics)
@@ -193,4 +224,11 @@ export default class MainItem extends Vue {
       y: Math.sin(cw) * moved.x + Math.cos(cw) * moved.y + center.y,
     };
   }
+
+  // eslint-disable-next-line consistent-return
+  private getAvg = (data: any) => _.mergeWith({}, ...data, (a: any, b: any) => {
+    if (_.isNumber(b)) {
+      return +((((b || 0) / data.length) + (_.isNumber(a) ? (a || 0) : 0)).toFixed(2));
+    }
+  });
 }

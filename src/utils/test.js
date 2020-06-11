@@ -50,4 +50,13 @@ const data1 = [
   },
 ];
 
-console.log(getAvg(data1));
+const data2 = [
+  {
+    yt: 0, zt: 4, qa: 3, ft: 0,
+  },
+  {
+    yt: 2, zt: 3, qa: 1, op: 5,
+  },
+];
+
+console.log(getAvg(data2));

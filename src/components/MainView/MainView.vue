@@ -1,7 +1,6 @@
 <template>
   <div class="main-wrapper">
     <div class="main-container">
-      <MainController/>
       <MainItemList/>
       <MainUnitMap/>
     </div>

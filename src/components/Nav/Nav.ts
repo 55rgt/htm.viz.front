@@ -1,7 +1,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import _ from 'lodash';
-import { BasicObject, UnitObject } from '@/interface/interface';
+import { BasicObject, MetricPerUnit, UnitObject } from '@/interface/interface';
 
 @Component({
 })
@@ -47,6 +47,7 @@ export default class Nav extends Vue {
       .value();
 
     this.filteredTableList = this.totalTableList;
+    // filteredTableList 에서 필터 및 소팅을  해서 parentID를 뽑아냄. 그걸 가지고 unitData
   }
 
   private updateView() {
@@ -65,8 +66,22 @@ export default class Nav extends Vue {
         .orderBy(['unitIndex'], ['asc'])
         .value())
       .value();
-    console.log(this.$store.state.unitData.length);
+
     // unitMetricPerUnit 만들고 emit 해서 on 해서 라디오차트 데이터 만들기
+    const obj: MetricPerUnit = {};
+    for (let i = 0; i < this.$store.state.selectedMetrics.length; i += 1) {
+      const key = this.$store.state.selectedMetrics[i];
+      const values = _.chain(_.flatten(this.$store.state.unitData))
+        .filter((d: UnitObject) => !_.isNil(d.metrics[key]))
+        .map((d: UnitObject) => +d.metrics[key])
+        .value();
+      const min = _.min(values);
+      const max = _.max(values);
+      // @ts-ignore
+      obj[key] = [min, max];
+    }
+    this.$store.state.unitMetricPerUnit = obj;
+    eventBus.$emit('updateView');
   }
 
   // eslint-disable-next-line consistent-return
