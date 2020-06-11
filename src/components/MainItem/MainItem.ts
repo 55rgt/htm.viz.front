@@ -1,5 +1,5 @@
-import { Vue, Component, Prop } from 'vue-property-decorator';
-import { SVG, Circle } from '@/interface/interface';
+import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Circle, SVG } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
 
@@ -8,6 +8,16 @@ export default class MainItem extends Vue {
   private radarChartSVG!: SVG;
 
   private innerCircles: Circle[] = [];
+
+  private center: {
+    cx: number;
+    cy: number;
+    r: number;
+  } = {
+    cx: 1,
+    cy: 1,
+    r: 1,
+  };
 
   @Prop(String) private classID!: string;
 
@@ -30,10 +40,16 @@ export default class MainItem extends Vue {
       svg: null,
     };
 
-    this.innerCircles = _.times(4, (idx: number) => ({
+    this.center = {
       cx: this.radarChartSVG.width / 2,
       cy: this.radarChartSVG.height / 2 - 15,
-      r: ((idx + 1) * (this.radarChartSVG.width / 2 - 20)) / 4,
+      r: this.radarChartSVG.width / 2 - 20,
+    };
+
+    this.innerCircles = _.times(4, (idx: number) => ({
+      cx: this.center.cx,
+      cy: this.center.cy,
+      r: ((idx + 1) * this.center.r) / 4,
     }));
   }
 
@@ -56,8 +72,8 @@ export default class MainItem extends Vue {
       .join(
         (enter: any) => enter
           .append('circle')
-          .attr('cx', this.radarChartSVG.width / 2)
-          .attr('cy', this.radarChartSVG.height / 2 - 15),
+          .attr('cx', this.center.cx)
+          .attr('cy', this.center.cy),
         (update: any) => update,
         (exit: any) => exit.call((exit: any) => exit.remove()),
       )
@@ -116,6 +132,32 @@ export default class MainItem extends Vue {
     // inner circles
     const innerCircles = this.radarChartSVG.svg.append('g').attr('class', 'innerCircles');
 
+    // lines
+
+    const lines = this.radarChartSVG.svg.append('g').attr('class', 'lines');
+    //
+    lines
+      .selectAll('line')
+      .data(this.$store.state.selectedMetrics)
+      .join(
+        (enter: any) => enter.append('line'),
+        (update: any) => update,
+        (exit: any) => exit,
+      )
+      .attr('x1', this.center.cx)
+      .attr('y1', this.center.cy)
+      .attr('x2', (d: string, i: number) => this.rotate(
+        { x: this.center.cx, y: this.center.cy - this.center.r },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).x)
+      .attr('y2', (d: string, i: number) => this.rotate(
+        { x: this.center.cx, y: this.center.cy - this.center.r },
+        { x: this.center.cx, y: this.center.cy },
+        i * (360 / this.$store.state.selectedMetrics.length),
+      ).y)
+      .attr('stroke-width', 1)
+      .attr('stroke', 'silver');
     // dots
     this.radarChartSVG.svg.append('g').attr('class', 'dots');
 
@@ -138,5 +180,17 @@ export default class MainItem extends Vue {
       .attr('stroke', 'silver')
       .attr('stroke-dasharray', ('3 3'));
     this.updateItem();
+  }
+
+  private rotate(point: { x: number; y: number }, center: { x: number; y: number }, angle: number) {
+    const moved = {
+      x: point.x - center.x,
+      y: point.y - center.y,
+    };
+    const cw = (angle * Math.PI) / 180;
+    return {
+      x: Math.cos(cw) * moved.x - Math.sin(cw) * moved.y + center.x,
+      y: Math.sin(cw) * moved.x + Math.cos(cw) * moved.y + center.y,
+    };
   }
 }

@@ -1,107 +1,78 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
+import _ from 'lodash';
+import { BasicObject, UnitObject } from '@/interface/interface';
 
 @Component({
 })
 export default class Nav extends Vue {
-  private headers = [
-    {
-      text: 'Dessert (100g serving)',
-      align: 'start',
-      sortable: false,
-      value: 'name',
-    },
-    { text: 'Calories', value: 'calories' },
-    { text: 'Fat (g)', value: 'fat' },
-    { text: 'Carbs (g)', value: 'carbs' },
-    { text: 'Protein (g)', value: 'protein' },
-    { text: 'Iron (%)', value: 'iron' },
-  ];
+  private tableHeaders: {
+    text: string;
+    align?: string;
+    sortable?: boolean;
+    value: string;
+  }[] = [{
+    text: 'parentID',
+    align: 'start',
+    value: 'parentID',
+  }];
 
-  private desserts = [
-    {
-      name: 'Frozen Yogurt',
-      calories: 159,
-      fat: 6.0,
-      carbs: 24,
-      protein: 4.0,
-      iron: '1%',
-    },
-    {
-      name: 'Ice cream sandwich',
-      calories: 237,
-      fat: 9.0,
-      carbs: 37,
-      protein: 4.3,
-      iron: '1%',
-    },
-    {
-      name: 'Eclair',
-      calories: 262,
-      fat: 16.0,
-      carbs: 23,
-      protein: 6.0,
-      iron: '7%',
-    },
-    {
-      name: 'Cupcake',
-      calories: 305,
-      fat: 3.7,
-      carbs: 67,
-      protein: 4.3,
-      iron: '8%',
-    },
-    {
-      name: 'Gingerbread',
-      calories: 356,
-      fat: 16.0,
-      carbs: 49,
-      protein: 3.9,
-      iron: '16%',
-    },
-    {
-      name: 'Jelly bean',
-      calories: 375,
-      fat: 0.0,
-      carbs: 94,
-      protein: 0.0,
-      iron: '0%',
-    },
-    {
-      name: 'Lollipop',
-      calories: 392,
-      fat: 0.2,
-      carbs: 98,
-      protein: 0,
-      iron: '2%',
-    },
-    {
-      name: 'Honeycomb',
-      calories: 408,
-      fat: 3.2,
-      carbs: 87,
-      protein: 6.5,
-      iron: '45%',
-    },
-    {
-      name: 'Donut',
-      calories: 452,
-      fat: 25.0,
-      carbs: 51,
-      protein: 4.9,
-      iron: '22%',
-    },
-    {
-      name: 'KitKat',
-      calories: 518,
-      fat: 26.0,
-      carbs: 65,
-      protein: 7,
-      iron: '6%',
-    },
-  ];
+  private totalTableList: {
+    [metric: string]: string | number;
+  }[] = [];
+
+  private filteredTableList: {
+    [metric: string]: string | number;
+  }[] = [];
 
   private mounted() {
-    console.log(this.$store.state.rawData);
+    this.$store.state.totalMetrics = _.chain(this.$store.state.rawData)
+      .map((d) => Object.keys(d.metrics))
+      .flatten()
+      .uniq()
+      .value()
+      .sort();
+
+    this.tableHeaders = this.tableHeaders.concat(
+      _.map(this.$store.state.totalMetrics, (d) => ({ text: d, value: d })),
+    );
+
+    this.totalTableList = _.chain(this.$store.state.rawData)
+      .groupBy((d) => d.parentID)
+      .map((value, key) => {
+        const obj = this.getAvg(_.map(value, (v) => v.metrics));
+        obj.parentID = key;
+        return obj;
+      })
+      .value();
+
+    this.filteredTableList = this.totalTableList;
   }
+
+  private updateView() {
+    this.$store.state.unitData = _.chain(this.$store.state.filteredData)
+      .groupBy((d: BasicObject) => d.parentID)
+      .values()
+      .map((d: BasicObject[]) => _.chain(d)
+        .groupBy((e: BasicObject) => Math.floor(e.dateIndex / this.$store.state.dateUnit))
+        .values()
+        .map((value: BasicObject[]) => ({
+          parentID: value[0].parentID,
+          metrics: this.getAvg(_.map(value, (v) => v.metrics)),
+          dateIndexes: _.map(value, (v) => v.dateIndex),
+          unitIndex: value[0].dateIndex / this.$store.state.dateUnit,
+        }) as UnitObject)
+        .orderBy(['unitIndex'], ['asc'])
+        .value())
+      .value();
+    console.log(this.$store.state.unitData.length);
+    // unitMetricPerUnit 만들고 emit 해서 on 해서 라디오차트 데이터 만들기
+  }
+
+  // eslint-disable-next-line consistent-return
+  private getAvg = (data: any) => _.mergeWith({}, ...data, (a: any, b: any) => {
+    if (_.isNumber(b)) {
+      return +((((b || 0) / data.length) + (_.isNumber(a) ? (a || 0) : 0)).toFixed(2));
+    }
+  });
 }

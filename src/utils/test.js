@@ -1,52 +1,53 @@
 /* eslint-disable @typescript-eslint/camelcase */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const _ = require('lodash');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const fs = require('fs');
+// // eslint-disable-next-line @typescript-eslint/no-var-requires
+// const fs = require('fs');
+//
+// const data = JSON.parse(fs.readFileSync('../../public/data/modified.json', 'utf-8'));
+//
+// // insight 안에서 쓸 데이터
+//
+// const modified = _.chain(data)
+//   .reduce((result, datum) => {
+//     const item = datum;
+//     const { metrics } = datum;
+//     const arr = ['action_values', 'actions', 'cost_per_action_type', 'unique_actions'];
+//     // eslint-disable-next-line no-restricted-syntax
+//     for (const metric of arr) {
+//       const keys = Object.keys(datum[metric]);
+//       // eslint-disable-next-line no-restricted-syntax
+//       for (const key of keys) {
+//         metrics[`${metric}#${key}`] = datum[metric][key];
+//       }
+//       delete item[metric];
+//     }
+//     item.metrics = metrics;
+//     result.push(item);
+//     return result;
+//   }, [])
+//   .value();
+//
+// fs.writeFileSync('../../public/data/modified-d.json', JSON.stringify(modified, null, 2));
 
-const data = JSON.parse(fs.readFileSync('../../public/data/advertisements-d.json', 'utf-8'));
+// eslint-disable-next-line consistent-return
+const getAvg = (data) => _.mergeWith({}, ...data, (a, b) => {
+  if (_.isNumber(b)) {
+    return ((b || 0) / data.length) + (_.isNumber(a) ? (a || 0) : 0);
+  }
+});
 
-// insight 안에서 쓸 데이터
-
-const modified = _.chain(data)
-  .map((d) => d.data.insights)
-  .map((d) => _.chain(d).orderBy(['date_start'], ['asc']).map((e, i) => ({
-    parentID: e.adset_name,
-    date: e.date_start,
-    dateIndex: i,
+const data1 = [
+  {
     metrics: {
-      clicks: +(+e.clicks).toFixed(2),
-      cpc: +(+e.cpc).toFixed(2),
-      cpm: +(+e.cpm).toFixed(2),
-      ctr: +(+e.ctr).toFixed(2),
-      frequency: +(+e.frequency).toFixed(2),
-      impressions: +(+e.impressions).toFixed(2),
-      reach: +(+e.reach).toFixed(2),
-      unique_clicks: +(+e.unique_clicks).toFixed(2),
-      unique_ctr: +(+e.unique_ctr).toFixed(2),
+      yt: 0, zt: 4, qa: 3, ft: 0,
     },
-    action_values: _.chain(e.action_values)
-      .map((f) => [f.action_type, +(+f.value).toFixed(2)])
-      .orderBy((d) => d[1], ['desc'])
-      .fromPairs()
-      .value(),
-    actions: _.chain(e.actions)
-      .map((f) => [f.action_type, +(+f.value).toFixed(2)])
-      .orderBy((d) => d[1], ['desc'])
-      .fromPairs()
-      .value(),
-    cost_per_action_type: _.chain(e.cost_per_action_type)
-      .map((f) => [f.action_type, +(+f.value).toFixed(2)])
-      .orderBy((d) => d[1], ['desc'])
-      .fromPairs()
-      .value(),
-    unique_actions: _.chain(e.unique_actions)
-      .map((f) => [f.action_type, +(+f.value).toFixed(2)])
-      .orderBy((d) => d[1], ['desc'])
-      .fromPairs()
-      .value(),
-  })).value())
-  .flattenDeep()
-  .value();
+  },
+  {
+    metrics: {
+      yt: 2, zt: 3, qa: 1, op: 5,
+    },
+  },
+];
 
-fs.writeFileSync('../../public/data/modified.json', JSON.stringify(modified, null, 2));
+console.log(getAvg(data1));

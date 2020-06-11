@@ -78,9 +78,9 @@
               Data Results </v-expansion-panel-header>
             <v-expansion-panel-content class="pa-0">
               <v-data-table
-                :headers="headers"
-                :items="desserts"
-                :items-per-page="99999"
+                :headers="tableHeaders"
+                :items="filteredTableList"
+                :items-per-page="9999"
                 class="panel-data-table panel-data-list no-scroll"
                 :hide-default-footer="true"
               />
@@ -88,7 +88,8 @@
           </v-expansion-panel>
         </v-expansion-panels>
       </div>
-      <v-btn class="pa-0" block depressed color="#0A3770" style="height: 42px;" dark>
+      <v-btn class="pa-0" block depressed color="#0A3770"
+             style="height: 42px;" dark @click="updateView">
         Update View</v-btn>
     </div>
   </div>

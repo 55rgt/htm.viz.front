@@ -4,15 +4,20 @@ import { generatePalette } from '@/utils/color-controller';
 import * as Interface from '@/interface/interface';
 import _ from 'lodash';
 // @ts-ignore
-import data from '../../public/data/modified.json';
+import data from '../../public/data/modified-d.json';
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
     rawData: data as Interface.BasicObject[],
-    selectedData: [] as Interface.BasicObject[],
-    totalMetrics: [],
+    filteredData: data as Interface.BasicObject[],
+    unitData: [] as Interface.UnitObject[][],
+    unitMetricPerUnit: {} as Interface.MetricPerUnit, // unitData 의 metric range
+    totalMetrics: [] as string[],
+    selectedMetrics: [
+      'clicks', 'cpc', 'cpm', 'ctr', 'frequency', 'impressions', 'reach', 'unique_clicks',
+    ] as string[],
     dateRange: ['', ''] as [string, string], //
     sortOption: [] as Interface.SortOptionItem[],
     filterOption: {
@@ -21,9 +26,7 @@ export default new Vuex.Store({
       showMax: 30,
     } as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
-    selectedMetrics: [] as string[],
-    dateUnit: 1,
-
+    dateUnit: 3,
     displayMetric: {
       metricPalette: generatePalette(10) as string[],
       selectedMetrics: _.range(10) as number[], // 나중에는 string[]으로 해야 함.

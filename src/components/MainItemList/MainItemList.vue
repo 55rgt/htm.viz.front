@@ -1,7 +1,8 @@
 <template>
   <div class="itemList-wrapper">
     <div class="itemList-container">
-      <MainItem v-for="n in 10" :key="n" v-bind:classID="'RadarChart_' + n">
+      <MainItem v-for="n in 10"
+                :key="n" v-bind:classID="'RadarChart_' + n">
       </MainItem>
     </div>
   </div>
