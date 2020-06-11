@@ -48,6 +48,7 @@ export interface BasicObject {
 export interface UnitObject {
   parentID: string;
   dateIndexes: number[];
+  dates: string[];
   unitIndex: number;
   metrics: {
     [metric: string]: number;

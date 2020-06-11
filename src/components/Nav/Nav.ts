@@ -61,6 +61,7 @@ export default class Nav extends Vue {
           parentID: value[0].parentID,
           metrics: this.getAvg(_.map(value, (v) => v.metrics)),
           dateIndexes: _.map(value, (v) => v.dateIndex),
+          dates: _.map(value, (v) => v.date),
           unitIndex: value[0].dateIndex / this.$store.state.dateUnit,
         }) as UnitObject)
         .orderBy(['unitIndex'], ['asc'])

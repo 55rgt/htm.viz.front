@@ -16,7 +16,7 @@ export default new Vuex.Store({
     unitMetricPerUnit: {} as Interface.MetricPerUnit, // unitData 의 metric range
     totalMetrics: [] as string[],
     selectedMetrics: [
-      'clicks', 'cpc', 'frequency', 'impressions', 'reach', 'unique_clicks', 'cpm', 'ctr',
+      'clicks', 'cpc', 'frequency', 'impressions', 'reach', 'unique_ctr', 'cpm', 'ctr', 'actions#link_click',
     ] as string[],
     dateRange: ['', ''] as [string, string], //
     sortOption: [] as Interface.SortOptionItem[],

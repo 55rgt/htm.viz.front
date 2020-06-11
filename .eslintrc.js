@@ -22,5 +22,6 @@ module.exports = {
     'no-shadow': 'off',
     '@typescript-eslint/camelcase': 'off',
     '@typescript-eslint/no-this-alias': 'off',
+    'prefer-destructuring': 'off',
   },
 };
