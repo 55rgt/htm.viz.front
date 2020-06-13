@@ -84,10 +84,11 @@ export default class Nav extends Vue {
       const min = _.min(values);
       const max = _.max(values);
       // @ts-ignore
-      obj[key] = [min, max];
+      obj[key] = (_.isNil(min) || _.isNil(max)) ? [0, 0] : [min, max];
     }
     this.$store.state.unitMetricPerUnit = obj;
     eventBus.$emit('updateView');
+    console.log(this.$store.state.unitData);
   }
 
   // eslint-disable-next-line consistent-return

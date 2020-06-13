@@ -1,8 +1,6 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
-import {
-  Circle, SVG, UnitObject, RadarChart,
-} from '@/interface/interface';
+import { Circle, RadarChart, SVG } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
 import { shadeColor } from '@/utils/color-controller';
@@ -53,11 +51,6 @@ export default class MainItem extends Vue {
 
   @Prop(Number) private idx!: number;
 
-  private testData = [
-    [[40, 97], [97, 40], [137, 97], [97, 137]],
-    [[40, 88], [80, 40], [141, 60], [147, 125], [82, 150]],
-  ];
-
   public $refs!: {
     radarChart: HTMLElement;
   };
@@ -101,7 +94,8 @@ export default class MainItem extends Vue {
   }
 
   private getRadarChartData(unitRange: [number, number]) {
-    const filtered = _.chain(this.$store.state.unitData[this.idx])
+    const cloned = _.cloneDeep(this.$store.state.unitData);
+    const filtered = _.chain(cloned[this.idx])
       .filter((d) => d.unitIndex >= unitRange[0] && d.unitIndex <= unitRange[1])
       .map((d) => d.metrics)
       .value();
@@ -110,18 +104,26 @@ export default class MainItem extends Vue {
       [metric: string]: number;
     } = this.getAvg(filtered);
 
-    return _.chain(distribution)
-      .entries()
-      .filter((d) => this.$store.state.selectedMetrics.indexOf(d[0]) !== -1)
-      .map((d) => ({
-        metric: d[0],
-        value: d[1],
-      }))
+    // console.log(result);
+    // console.log(result2);
+    return _.chain(this.$store.state.selectedMetrics)
+      .map((d) => {
+        if (_.isNil(distribution[d])) {
+          return {
+            metric: d,
+            value: 0,
+          };
+        }
+        return {
+          metric: d,
+          value: distribution[d],
+        };
+      })
       .orderBy((d) => this.$store.state.selectedMetrics.indexOf(d.metric), ['asc'])
       .value();
   }
 
-  private created() {
+  private mounted() {
     // 버그
     eventBus.$on('updateView', () => {
       this.initialize();
@@ -140,8 +142,12 @@ export default class MainItem extends Vue {
       console.error('Error');
       return -1;
     }
-    return (metric[0] === metric[1] ?
-      1 : +((value - metric[0]) / (metric[1] - metric[0])).toFixed(2));
+
+    // 이것도 metric[0], [1]이 0이면 없는 것이기 때문에 0을 리턴해야 함.
+    if (metric[0] === metric[1]) {
+      return (metric[0] === 0 ? 0 : 1);
+    }
+    return +(((value - metric[0]) / (metric[1] - metric[0])).toFixed(2));
   }
 
   private updateItem(option: {
@@ -498,10 +504,11 @@ export default class MainItem extends Vue {
   private moveDrag(d: any, o: DragObject) {
     const that = this;
     const unitLength = this.$store.state.unitData[this.idx].length;
+    const length = that.lensOption.xThreshold[1] - that.lensOption.xThreshold[0];
+    const gap = length / (unitLength * 2);
     if (!that.lensOption.isDown) return;
     if (unitLength <= 1) return;
     const delta = d[0] - that.lensOption.px;
-    const prevRange = that.lensOption.xRange;
     that.lensOption.px = d[0];
     switch (o) {
       case DragObject.BODY:
@@ -513,14 +520,14 @@ export default class MainItem extends Vue {
         break;
       case DragObject.LEFT_CTRL:
         if (that.lensOption.xRange[0] + delta >= that.lensOption.xThreshold[0] &&
-        that.lensOption.xRange[0] + delta < that.lensOption.xRange[1]) {
+        that.lensOption.xRange[0] + delta <= that.lensOption.xRange[1] - 2 * gap) {
           that.lensOption.xRange[0] += delta;
         }
         // 왼쪽 올린게 바운더리에 안 겹치고, 걔가 오른쪽 애보다 값이 작아야 함.
         break;
       case DragObject.RIGHT_CTRL:
         if (that.lensOption.xRange[1] + delta <= that.lensOption.xThreshold[1] &&
-          that.lensOption.xRange[1] + delta > that.lensOption.xRange[0]) {
+          that.lensOption.xRange[1] + delta >= that.lensOption.xRange[0] + 2 * gap) {
           that.lensOption.xRange[1] += delta;
         }
         break;
@@ -545,20 +552,21 @@ export default class MainItem extends Vue {
     d3.select(`#r_ctrl${this.classID}`)
       .attr('x', () => this.lensOption.xRange[1] - this.lensOption.sliderWidth / 2);
 
-    const newFocusedUnitRange: [number, number] = [
-      Math.round((
-        (unitLength - 1) * (that.lensOption.xRange[0] - that.lensOption.xThreshold[0]))
-        / (that.lensOption.xThreshold[1] - that.lensOption.xThreshold[0])),
-      Math.round((
-        (unitLength - 1) * (that.lensOption.xRange[1] - that.lensOption.xThreshold[0])
-      ) / (that.lensOption.xThreshold[1] - that.lensOption.xThreshold[0])),
-    ];
+    const positions: number[] = _.times(unitLength,
+      (i: number) => gap + i * (length / unitLength) + this.lensOption.xThreshold[0]);
 
+    const newFocusedUnitRange: [number, number] = [
+      _.findIndex(positions,
+        (d: number) => d > this.lensOption.xRange[0] && d <= this.lensOption.xRange[1]),
+      _.findLastIndex(positions,
+        (d: number) => d > this.lensOption.xRange[0] && d <= this.lensOption.xRange[1]),
+    ];
 
     if (newFocusedUnitRange[0] !== this.focusedUnitRange[0] ||
     newFocusedUnitRange[1] !== this.focusedUnitRange[1]) {
       this.focusedUnitRange = newFocusedUnitRange;
       this.focusedRadarChart = this.getRadarChartData(this.focusedUnitRange);
+      console.log(this.focusedUnitRange);
       // update focused charts
       this.updateItem({
         dotSelector: '.focusedDots',
@@ -570,6 +578,35 @@ export default class MainItem extends Vue {
   }
 
   private endDrag(d: any) {
+    const that = this;
     this.lensOption.isDown = false;
+    const unitLength = this.$store.state.unitData[this.idx].length;
+    const length = that.lensOption.xThreshold[1] - that.lensOption.xThreshold[0];
+    const gap = length / (unitLength * 2);
+    const centerPosition = this.lensOption.xThreshold[0] + (_.sum(this.focusedUnitRange) + 1) * gap;
+    const indexGap = this.focusedUnitRange[1] - this.focusedUnitRange[0];
+    this.lensOption.xRange = [
+      centerPosition - (indexGap + 1) * gap,
+      centerPosition + (indexGap + 1) * gap,
+    ];
+
+    d3.select(`#leftRect${this.classID}`)
+      .attr('width', () => that.lensOption.xRange[0]);
+
+    d3.select(`#centerRect${this.classID}`)
+      .attr('x', () => that.lensOption.xRange[0])
+      .attr('width', () => that.lensOption.xRange[1] - that.lensOption.xRange[0]);
+
+    d3.select(`#rightRect${this.classID}`)
+      .attr('x', () => that.lensOption.xRange[1])
+      .attr('width', () => 192 - that.lensOption.xRange[1]);
+
+    d3.select(`#l_ctrl${this.classID}`)
+      .attr('x', () => this.lensOption.xRange[0] - this.lensOption.sliderWidth / 2);
+
+    d3.select(`#r_ctrl${this.classID}`)
+      .attr('x', () => this.lensOption.xRange[1] - this.lensOption.sliderWidth / 2);
+
+    console.log(this.focusedUnitRange);
   }
 }
