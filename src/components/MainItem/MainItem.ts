@@ -168,13 +168,13 @@ export default class MainItem extends Vue {
         (update: any) => update,
         (exit: any) => exit.call((exit: any) => exit.remove()),
       )
-      .on('mouseover', function (d: any) {
+      .on('mouseover', function a(d: any) {
         console.log(that.$store.state.unitMetricPerUnit);
         console.log(d);
         // @ts-ignore
         d3.select(this).attr('r', 4);
       })
-      .on('mouseout', function (d: any) {
+      .on('mouseout', function a(d: any) {
         // @ts-ignore
         d3.select(this).attr('r', 3);
       })
@@ -358,15 +358,15 @@ export default class MainItem extends Vue {
     d3.select(`#centerRect${this.classID}`)
       // @ts-ignore
       .call(d3.drag()
-        .on('start', function () {
+        .on('start', function a() {
           // @ts-ignore
           that.startDrag(d3.mouse(this));
         })
-        .on('drag', function () {
+        .on('drag', function a() {
           // @ts-ignore
           that.moveDrag(d3.mouse(this), DragObject.BODY);
         })
-        .on('end', function () {
+        .on('end', function a() {
           // @ts-ignore
           that.endDrag(d3.mouse(this));
         }));
@@ -400,15 +400,15 @@ export default class MainItem extends Vue {
     d3.select(`#l_ctrl${this.classID}`)
       // @ts-ignore
       .call(d3.drag()
-        .on('start', function () {
+        .on('start', function a() {
           // @ts-ignore
           that.startDrag(d3.mouse(this));
         })
-        .on('drag', function () {
+        .on('drag', function a() {
           // @ts-ignore
           that.moveDrag(d3.mouse(this), DragObject.LEFT_CTRL);
         })
-        .on('end', function () {
+        .on('end', function a() {
           // @ts-ignore
           that.endDrag(d3.mouse(this));
         }));
@@ -430,15 +430,15 @@ export default class MainItem extends Vue {
     d3.select(`#r_ctrl${this.classID}`)
       // @ts-ignore
       .call(d3.drag()
-        .on('start', function () {
+        .on('start', function a() {
           // @ts-ignore
           that.startDrag(d3.mouse(this));
         })
-        .on('drag', function () {
+        .on('drag', function a() {
           // @ts-ignore
           that.moveDrag(d3.mouse(this), DragObject.RIGHT_CTRL);
         })
-        .on('end', function () {
+        .on('end', function a() {
           // @ts-ignore
           that.endDrag(d3.mouse(this));
         }));

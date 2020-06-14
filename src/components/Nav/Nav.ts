@@ -88,7 +88,7 @@ export default class Nav extends Vue {
     }
     this.$store.state.unitMetricPerUnit = obj;
     eventBus.$emit('updateView');
-    console.log(this.$store.state.unitData);
+    // console.log(this.$store.state.unitData);
   }
 
   // eslint-disable-next-line consistent-return

@@ -1,5 +1,5 @@
 <template>
-  <div class="unitMap-container"></div>
+  <div class="unitMap-container" ref="unitMap" id="UnitMap"></div>
 </template>
 
 <script src='./MainUnitMap.ts'>
