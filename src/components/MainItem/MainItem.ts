@@ -93,6 +93,10 @@ export default class MainItem extends Vue {
     this.focusedRadarChart = this.totalRadarChart;
   }
 
+  private selectRadar() {
+    console.log(this.totalRadarChart);
+  }
+
   private getRadarChartData(unitRange: [number, number]) {
     const cloned = _.cloneDeep(this.$store.state.unitData);
     const filtered = _.chain(cloned[this.idx])

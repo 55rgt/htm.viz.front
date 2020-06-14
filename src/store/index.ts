@@ -26,7 +26,7 @@ export default new Vuex.Store({
       showMax: 30,
     } as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
-    dateUnit: 3,
+    dateUnit: 7,
     displayMetric: {
       metricPalette: generatePalette(10) as string[],
       selectedMetrics: _.range(10) as number[], // 나중에는 string[]으로 해야 함.
@@ -34,7 +34,6 @@ export default new Vuex.Store({
       focusedMetricIdx: 0 as number,
       focusedDayIndexes: [[], []] as [number[], number[]],
     },
-    dayUnit: 3,
   },
   mutations: {
   },

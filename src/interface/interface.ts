@@ -17,6 +17,15 @@ export interface SortOptionItem {
   order: 'asc' | 'desc';
 }
 
+export interface UnitMapData {
+  x: number;
+  y: number;
+  parentID: string;
+  unitIndex: number;
+  avgScore: number;
+  rank: number;
+}
+
 export interface FilterOption {
   startDate: [string, string];
   endDate: [string, string];

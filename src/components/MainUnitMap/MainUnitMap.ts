@@ -1,6 +1,6 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
-import { SVG } from '@/interface/interface';
+import { UnitMapData, SVG } from '@/interface/interface';
 import _ from 'lodash';
 import axios from 'axios';
 import * as d3 from 'd3';
@@ -9,23 +9,24 @@ import * as d3 from 'd3';
 export default class MainUnitMap extends Vue {
   private unitMapSVG!: SVG;
 
-  private unitMapData: {
-    x: number;
-    y: number;
-    parentID: string;
-    unitIndex: number;
-    avgScore: number;
-    rank: number;
-  }[] = [];
+  private mapRange!: {
+    x: [number, number];
+    y: [number, number];
+  };
+
+  private threshold!: {
+    x: [number, number];
+    y: [number, number];
+  };
+
+  private unitMapData: UnitMapData[] = [];
 
   created() {
-    eventBus.$on('updateView', () => {
-      this.initialize().then((r) => {
-        console.log(r);
-        console.log(this.unitMapData);
-        this.remove();
-        this.drawElements();
-      });
+    eventBus.$on('updateView', async () => {
+      await this.getData();
+      this.initialize();
+      this.remove();
+      this.drawElements();
     });
   }
 
@@ -34,28 +35,67 @@ export default class MainUnitMap extends Vue {
   };
 
   private remove() {
-    console.log('removed');
     d3.select(`#${this.unitMapSVG.svgID}`).remove();
   }
 
   private drawElements() {
-    const that = this;
-    console.log('drawElements');
+    console.log(this.unitMapData);
     this.unitMapSVG.svg = d3.select('#UnitMap')
       .append('svg')
       .attr('id', this.unitMapSVG.svgID)
       .attr('width', this.unitMapSVG.width)
       .attr('height', this.unitMapSVG.height);
+    const nodes = this.unitMapSVG.svg.append('g').attr('class', 'nodes');
+    nodes.selectAll('circle')
+      .data(this.unitMapData)
+      .join(
+        (enter: any) => enter
+          .append('circle')
+          .attr('cx', this.unitMapSVG.width / 2)
+          .attr('cy', this.unitMapSVG.height / 2),
+        (update: any) => update,
+        (exit: any) => exit.call((exit: any) => exit.remove()),
+      )
+      .transition()
+      .duration(300)
+      .attr('cx', (d: UnitMapData) => this.threshold.x[0]
+        + (this.threshold.x[1] - this.threshold.x[0])
+        * this.normalize(this.mapRange.x, d.x, 2))
+      .attr('cy', (d: UnitMapData) => this.threshold.y[0]
+        + (this.threshold.y[1] - this.threshold.y[0])
+        * this.normalize(this.mapRange.y, d.y, 2))
+      .attr('r', (d: UnitMapData) => 5 + 2 * (Math.log10(d.avgScore * 100 + 1) ** 2))
+      .attr('fill', 'none')
+      .attr('fill-opacity', 0.2)
+      .attr('stroke', '#888')
+      .attr('stroke-width', 1);
   }
 
-  private async initialize() {
+  private initialize() {
     this.unitMapSVG = {
       svgID: 'svgUnitMap',
       width: this.$refs.unitMap.offsetWidth,
       height: this.$refs.unitMap.offsetHeight,
       svg: null,
     };
-    await this.getData();
+    this.threshold = {
+      x: [10, this.$refs.unitMap.offsetWidth - 10],
+      y: [10, this.$refs.unitMap.offsetHeight - 10],
+    };
+    this.mapRange = {
+      x: [
+        // @ts-ignore
+        _.minBy(this.unitMapData, (d) => d.x).x,
+        // @ts-ignore
+        _.maxBy(this.unitMapData, (d) => d.x).x,
+      ],
+      y: [
+        // @ts-ignore
+        _.minBy(this.unitMapData, (d) => d.y).y,
+        // @ts-ignore
+        _.maxBy(this.unitMapData, (d) => d.y).y,
+      ],
+    };
   }
 
   private normalize(range: [number, number], value: number, fp: number) {
@@ -63,9 +103,7 @@ export default class MainUnitMap extends Vue {
     return range[1] === range[0] ? 1 : +(((value - range[0]) / (range[1] - range[0])).toFixed(fp));
   }
 
-  private getData() {
-    // console.log('getData');
-
+  private async getData() {
     const metricList = this.$store.state.selectedMetrics;
 
     // 여기서 0 박아야 함.
@@ -91,8 +129,6 @@ export default class MainUnitMap extends Vue {
       })
       .value();
 
-    // console.log(normalized);
-
     const meanMap = _.chain(metricList)
       .reduce((result, metric) => {
         const obj = result;
@@ -108,7 +144,6 @@ export default class MainUnitMap extends Vue {
         return newObj;
       })
       .value();
-    // console.log(meanMap);
 
     const refined: {
       parentID: string;
@@ -139,7 +174,7 @@ export default class MainUnitMap extends Vue {
       })
       .value();
 
-    axios
+    await axios
       .post('http://127.0.0.1:5000/make-data', refined)
       .then((result) => {
         if (refined.length !== result.data.length) {
@@ -160,7 +195,6 @@ export default class MainUnitMap extends Vue {
               .value(),
           };
         });
-        return this.unitMapData;
       })
       .catch((error) => {
         console.error('Error Occurred', error);
