@@ -63,8 +63,8 @@ export default class MainUnitMap extends Vue {
       .attr('cy', (d: UnitMapData) => this.threshold.y[0]
         + (this.threshold.y[1] - this.threshold.y[0])
         * this.normalize(this.mapRange.y, d.y, 2))
-      .attr('r', (d: UnitMapData) => 5 + 2 * (Math.log10(d.avgScore * 100 + 1) ** 2))
-      .attr('fill', 'none')
+      .attr('r', (d: UnitMapData) => 5 + 3 * (Math.log10(d.avgScore * 100 + 1) ** 2))
+      .attr('fill', 'pink')
       .attr('fill-opacity', 0.2)
       .attr('stroke', '#888')
       .attr('stroke-width', 1);
@@ -110,7 +110,7 @@ export default class MainUnitMap extends Vue {
       .flatten()
       .forEach((d) => {
         const dt = d;
-        dt.metrics = _.chain(this.$store.state.selectedMetrics)
+        dt.metrics = _.chain(metricList)
           .reduce((result, metric) => {
             const obj = result;
             if (_.isNil(dt.metrics[metric])) {

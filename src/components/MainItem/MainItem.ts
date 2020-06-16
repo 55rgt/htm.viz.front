@@ -1,4 +1,6 @@
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import {
+  Component, Prop, Vue, Watch,
+} from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import { Circle, RadarChart, SVG } from '@/interface/interface';
 import _ from 'lodash';
@@ -97,8 +99,6 @@ export default class MainItem extends Vue {
     const data = this.$store.state.unitData[this.idx];
     const index = this.idx;
     const parentID = data[0].parentID;
-    console.log(data[0]);
-    console.log(parentID);
     eventBus.$emit('updateSubDisplay', {
       data,
       index,
@@ -137,7 +137,9 @@ export default class MainItem extends Vue {
   }
 
   private mounted() {
-    // 버그
+    this.initialize();
+    this.remove();
+    this.drawElements();
     eventBus.$on('updateView', () => {
       this.initialize();
       this.remove();
@@ -182,8 +184,8 @@ export default class MainItem extends Vue {
         (exit: any) => exit.call((exit: any) => exit.remove()),
       )
       .on('mouseover', function a(d: any) {
-        console.log(that.$store.state.unitMetricPerUnit);
-        console.log(d);
+        // console.log(that.$store.state.unitMetricPerUnit);
+        // console.log(d);
         // @ts-ignore
         d3.select(this).attr('r', 4);
       })
@@ -239,7 +241,7 @@ export default class MainItem extends Vue {
 
     this.radarChartSVG.svg.select(option.pathSelector)
       .selectAll('path')
-      .data(pathData)
+      .data([path])
       .join(
         (enter: any) => enter.append('path'),
         (update: any) => update.transition()
@@ -252,7 +254,7 @@ export default class MainItem extends Vue {
       .attr('stroke', option.color)
       .attr('stroke-width', 1.5)
       .attr('fill', option.color)
-      .attr('fill-opacity', 0.03);
+      .attr('fill-opacity', 0.3);
   }
 
   private drawElements() {

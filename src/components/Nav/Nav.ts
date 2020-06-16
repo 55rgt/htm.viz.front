@@ -1,6 +1,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import _ from 'lodash';
+import { generatePalette } from '@/utils/color-controller';
 import { BasicObject, MetricPerUnit, UnitObject } from '@/interface/interface';
 
 @Component({
@@ -72,7 +73,6 @@ export default class Nav extends Vue {
       .shuffle()
       .slice(0, Math.floor(Math.random() * 4 + 6))
       .value();
-
     // unitMetricPerUnit 만들고 emit 해서 on 해서 라디오차트 데이터 만들기
     const obj: MetricPerUnit = {};
     for (let i = 0; i < this.$store.state.selectedMetrics.length; i += 1) {

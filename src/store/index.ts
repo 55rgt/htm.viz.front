@@ -21,14 +21,7 @@ export default new Vuex.Store({
     sortOption: [] as Interface.SortOptionItem[],
     filterOption: {} as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
-    dateUnit: 7,
-    displayMetric: {
-      metricPalette: generatePalette(10) as string[],
-      selectedMetrics: _.range(10) as number[], // 나중에는 string[]으로 해야 함.
-      metricsOrder: _.shuffle(_.range(10) as number[]) as number[], // palette 에 있는 metrics로
-      focusedMetricIdx: 0 as number,
-      focusedDayIndexes: [[], []] as [number[], number[]],
-    },
+    dateUnit: 2,
   },
   mutations: {
   },

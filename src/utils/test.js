@@ -62,8 +62,15 @@ const _ = require('lodash');
 // console.log(getAvg(data2));
 // eslint-disable-next-line no-irregular-whitespace
 const a = {
-  left: {},
-  right: { parentID: 'id_1' },
+  left: 4,
+  right: 5,
+  middle: 19,
+  center: 8,
 };
 
-console.log(a.left.parentID, a.right.parentID);
+const maxScore = 40;
+
+const result = _.chain(a)
+  .entries()
+  // .sort()
+  .value();
