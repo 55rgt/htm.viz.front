@@ -5,7 +5,7 @@ import { shadeColor } from '@/utils/color-controller';
 import getDaily from '@/utils/data-generator';
 import {
   SubDisplayDaily, SubDisplayUnit, SubDisplayBar, SVG, SubDisplayBarUnit, SubDisplayItem,
-  SubDisplayFocusedItem,
+  SubDisplayFocusedItem, UnitObject,
 } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
@@ -23,6 +23,22 @@ export default class SubDisplay extends Vue {
   };
 
   private shadeColor = shadeColor;
+
+  private selectedData: {
+    left: {
+      parentID?: string;
+      dailyData?: [];
+      unitData?: [];
+    };
+    right: {
+      parentID?: string;
+      dailyUnits?: [];
+      unitData?: [];
+    };
+  } = {
+    left: {},
+    right: {},
+  };
 
   private dragObj = {
     isDown: false,
@@ -56,6 +72,43 @@ export default class SubDisplay extends Vue {
 
   private overlap: [number, number] = [0, 0];
 
+  private created() {
+    eventBus.$on('updateView', () => {
+      console.log('update View - sub display');
+      this.initialize();
+      this.remove();
+      this.drawElements();
+    });
+    eventBus.$on('updateSubDisplay', (obj: {
+      data: UnitObject[],
+      index: number,
+      parentID: string,
+    }) => this.updateData(obj));
+  }
+
+  private updateData(obj: {
+    data: UnitObject[],
+    index: number,
+    parentID: string,
+  }) {
+    const left = _.isEmpty(this.selectedData.left) ? '' : this.selectedData.left.parentID;
+    const right = _.isEmpty(this.selectedData.right) ? '' : this.selectedData.right.parentID;
+    if ([left, right].includes(obj.parentID)) {
+      const key = this.selectedData.left.parentID === obj.parentID ? 'left' : 'right';
+      this.selectedData[key] = {};
+    } else {
+      if (_.isEmpty(this.selectedData.left)) {
+        this.selectedData.left = {
+          parentID: obj.parentID,
+        };
+      } else if (_.isEmpty(this.selectedData.right)) {
+        this.selectedData.right = {
+          parentID: obj.parentID,
+        }
+      }
+    }
+    console.log(this.selectedData);
+  }
 
   private tempCallSubGraph() {
     eventBus.$emit('updateSubGraph');
@@ -70,7 +123,7 @@ export default class SubDisplay extends Vue {
       .groupBy((d) => Math.floor(d.dayIndex / this.$store.state.dayUnit))
       .map((d: SubDisplayDaily[]) => ({
         dayIndexes: _.map(d, (e: SubDisplayDaily) => e.dayIndex),
-        unitIndex: Math.floor(d[0].dayIndex / this.$store.state.dayUnit),
+        unitIndex: Math.floor(d[0].dayIndex / this.$store.state.dateUnit),
         metrics: _.chain({})
           .mergeWith(...(_.map(d, (e: SubDisplayDaily) => e.metrics)),
             (obj: number, src: number) => (_.isNumber(obj) ? obj + src : src))
@@ -106,52 +159,61 @@ export default class SubDisplay extends Vue {
       svg: null,
     };
 
-    // 하루 단위로 랜덤 데이터를 생성함. 이후에 진짜 데이터로 갈아끼움
+    this.selectedData = {
+      left: {},
+      right: {},
+    };
+
+    // // 하루 단위로 랜덤 데이터를 생성함. 이후에 진짜 데이터로 갈아끼움
     this.dailyLists = [
       getDaily([5, 10], [10, 20]),
       getDaily([5, 10], [10, 20]),
     ];
 
-    // 하루 단위의 데이터를 dayUnit 별로 묶어서 저장함.
+    console.log(this.dailyLists[0]);
+
+    // // 하루 단위의 데이터를 dayUnit 별로 묶어서 저장함.
     this.units = [
       this.getUnit(this.dailyLists[BarIdx.LEFT]),
       this.getUnit(this.dailyLists[BarIdx.RIGHT]),
     ];
 
-    this.bars = [{
-      x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
-      y: this.options.margin.y / 2,
-      width: this.options.barWidth,
-      height: (this.units[BarIdx.LEFT].length
-        * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
-      color: '#bed7b2',
-    }, {
-      x: (this.subDisplaySVG.width + this.options.gap - this.options.barWidth) / 2,
-      y: (this.units[BarIdx.LEFT].length * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length) + this.options.margin.y / 2,
-      width: this.options.barWidth,
-      height: (this.units[BarIdx.RIGHT].length
-        * (this.subDisplaySVG.height - this.options.margin.y))
-        / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
-      color: '#edb6d3',
-    }];
-
-    this.barUnits = [this.getBarUnit(BarIdx.LEFT), this.getBarUnit(BarIdx.RIGHT)];
-
-    // units 돌면서 제일 긴 애 측정하기.
-    this.maxUnitScore = _.chain(this.units)
-      .flattenDeep()
-      .map((d) => _.sumBy(d.metrics, e => e.score))
-      .max()
-      .value();
-
-    // subDisplayItem 만들기
-    this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
-
-    this.focusedItem = [];
-
-    this.overlap = [0, 0];
+    console.log(this.units);
+    //
+    // this.bars = [{
+    //   x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
+    //   y: this.options.margin.y / 2,
+    //   width: this.options.barWidth,
+    //   height: (this.units[BarIdx.LEFT].length
+    //     * (this.subDisplaySVG.height - this.options.margin.y))
+    //     / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
+    //   color: '#bed7b2',
+    // }, {
+    //   x: (this.subDisplaySVG.width + this.options.gap - this.options.barWidth) / 2,
+    //   y: (this.units[BarIdx.LEFT].length * (this.subDisplaySVG.height - this.options.margin.y))
+    //     / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length) + this.options.margin.y / 2,
+    //   width: this.options.barWidth,
+    //   height: (this.units[BarIdx.RIGHT].length
+    //     * (this.subDisplaySVG.height - this.options.margin.y))
+    //     / (this.units[BarIdx.LEFT].length + this.units[BarIdx.RIGHT].length),
+    //   color: '#edb6d3',
+    // }];
+    //
+    // this.barUnits = [this.getBarUnit(BarIdx.LEFT), this.getBarUnit(BarIdx.RIGHT)];
+    //
+    // // units 돌면서 제일 긴 애 측정하기.
+    // this.maxUnitScore = _.chain(this.units)
+    //   .flattenDeep()
+    //   .map((d) => _.sumBy(d.metrics, e => e.score))
+    //   .max()
+    //   .value();
+    //
+    // // subDisplayItem 만들기
+    // this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
+    //
+    // this.focusedItem = [];
+    //
+    // this.overlap = [0, 0];
   }
 
   /*

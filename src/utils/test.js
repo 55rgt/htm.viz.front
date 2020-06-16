@@ -61,7 +61,9 @@ const _ = require('lodash');
 //
 // console.log(getAvg(data2));
 // eslint-disable-next-line no-irregular-whitespace
-const u = [{ tom: 1 }, { roger: 2 }, { jake: 0.5 }];
+const a = {
+  left: {},
+  right: { parentID: 'id_1' },
+};
 
-const arr = ['roger', 'jake', 'tom'];
-console.log(_.orderBy(u, (value, key) => arr.indexOf(key)));
+console.log(a.left.parentID, a.right.parentID);

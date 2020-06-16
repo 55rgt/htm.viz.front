@@ -13,18 +13,13 @@ export default new Vuex.Store({
     rawData: data as Interface.BasicObject[],
     filteredData: data as Interface.BasicObject[],
     unitData: [] as Interface.UnitObject[][],
-    unitMetricPerUnit: {} as Interface.MetricPerUnit, // unitData 의 metric range
+    metricPerUnit: {} as Interface.MetricPerUnit, // unitData 의 metric range
     totalMetrics: [] as string[],
     selectedMetrics: [
       'clicks', 'cpc', 'frequency', 'impressions', 'reach', 'unique_ctr', 'cpm', 'ctr', 'actions#link_click',
     ] as string[],
-    dateRange: ['', ''] as [string, string], //
     sortOption: [] as Interface.SortOptionItem[],
-    filterOption: {
-      startDate: ['', ''] as [string, string], //
-      endDate: ['', ''] as [string, string], //
-      showMax: 30,
-    } as Interface.FilterOption,
+    filterOption: {} as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
     dateUnit: 7,
     displayMetric: {

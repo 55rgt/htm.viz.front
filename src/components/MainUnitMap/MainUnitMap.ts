@@ -39,7 +39,6 @@ export default class MainUnitMap extends Vue {
   }
 
   private drawElements() {
-    console.log(this.unitMapData);
     this.unitMapSVG.svg = d3.select('#UnitMap')
       .append('svg')
       .attr('id', this.unitMapSVG.svgID)
@@ -145,6 +144,7 @@ export default class MainUnitMap extends Vue {
       })
       .value();
 
+    // avgScore랑 Scores는 weight의 영향을 안 바당ㅇ야 한다.
     const refined: {
       parentID: string;
       unitIndex: number;
@@ -173,6 +173,8 @@ export default class MainUnitMap extends Vue {
         };
       })
       .value();
+
+    console.log(refined);
 
     await axios
       .post('http://127.0.0.1:5000/make-data', refined)

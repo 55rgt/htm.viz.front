@@ -94,7 +94,16 @@ export default class MainItem extends Vue {
   }
 
   private selectRadar() {
-    console.log(this.totalRadarChart);
+    const data = this.$store.state.unitData[this.idx];
+    const index = this.idx;
+    const parentID = data[0].parentID;
+    console.log(data[0]);
+    console.log(parentID);
+    eventBus.$emit('updateSubDisplay', {
+      data,
+      index,
+      parentID,
+    });
   }
 
   private getRadarChartData(unitRange: [number, number]) {

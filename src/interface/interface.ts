@@ -27,9 +27,7 @@ export interface UnitMapData {
 }
 
 export interface FilterOption {
-  startDate: [string, string];
-  endDate: [string, string];
-  showMax: number;
+  [metric: string]: [number, number];
 }
 
 export interface WeightController {
