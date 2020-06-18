@@ -23,6 +23,8 @@ export default class MainItem extends Vue {
 
   private focusedUnitRange!: [number, number];
 
+  private selectState = 0;
+
   // 전체기간
   private totalRadarChart: RadarChart[] = [];
 
@@ -58,6 +60,7 @@ export default class MainItem extends Vue {
   };
 
   private initialize() {
+    this.selectState = 0;
     this.radarChartSVG = {
       svgID: `svg${this.classID}`,
       width: this.$refs.radarChart.offsetWidth,
@@ -99,6 +102,19 @@ export default class MainItem extends Vue {
     const data = this.$store.state.unitData[this.idx];
     const index = this.idx;
     const parentID = data[0].parentID;
+    const selectedIndex = this.$store.state.selectedRadarIndex.indexOf(index);
+    if (selectedIndex === -1) {
+      if (this.$store.state.selectedRadarIndex[0] === -1) {
+        this.$store.state.selectedRadarIndex[0] = index;
+        this.selectState = 1;
+      } else if (this.$store.state.selectedRadarIndex[1] === -1) {
+        this.$store.state.selectedRadarIndex[1] = index;
+        this.selectState = 2;
+      }
+    } else {
+      this.$store.state.selectedRadarIndex[selectedIndex] = -1;
+      this.selectState = 0;
+    }
     eventBus.$emit('updateSubDisplay', {
       data,
       index,

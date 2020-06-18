@@ -69,10 +69,10 @@ export default class Nav extends Vue {
         .value())
       .value();
 
-    this.$store.state.selectedMetrics = _.chain(this.$store.state.totalMetrics)
-      .shuffle()
-      .slice(0, Math.floor(Math.random() * 4 + 6))
-      .value();
+    // this.$store.state.selectedMetrics = _.chain(this.$store.state.totalMetrics)
+    //   .shuffle()
+    //   .slice(0, Math.floor(Math.random() * 4 + 6))
+    //   .value();
     // unitMetricPerUnit 만들고 emit 해서 on 해서 라디오차트 데이터 만들기
     const obj: MetricPerUnit = {};
     for (let i = 0; i < this.$store.state.selectedMetrics.length; i += 1) {

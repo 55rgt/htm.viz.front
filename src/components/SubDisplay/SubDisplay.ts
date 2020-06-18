@@ -82,6 +82,14 @@ export default class SubDisplay extends Vue {
     });
   }
 
+  private removeItem(o: {
+    barSelector: string;
+    itemSelector: string;
+  }) {
+    this.subDisplaySVG.svg.select(o.barSelector).selectAll('*').remove();
+    this.subDisplaySVG.svg.select(o.itemSelector).selectAll('*').remove();
+  }
+
   private updateData(obj: {
     data: UnitObject[],
     index: number,
@@ -98,6 +106,11 @@ export default class SubDisplay extends Vue {
         dailyData: [],
         unitData: [],
       };
+      this.items[keyIdx] = [];
+      this.removeItem({
+        barSelector: keyIdx === BarIdx.LEFT ? '.leftBar' : '.rightBar',
+        itemSelector: keyIdx === BarIdx.LEFT ? '.leftItemList' : '.rightItemList',
+      })
     } else {
       if (this.selectedData.left.parentID === '') {
         this.selectedData.left = {
@@ -113,6 +126,8 @@ export default class SubDisplay extends Vue {
         }
       }
     }
+    console.log('selectedData');
+    console.log(this.selectedData);
 
     this.bars = [{
       x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
@@ -134,6 +149,9 @@ export default class SubDisplay extends Vue {
       color: '#edb6d3',
     }];
 
+    console.log('bars');
+    console.log(this.bars);
+
     if (this.selectedData.left.parentID === '' && this.selectedData.right.parentID === '') {
       this.maxUnitScore = -1;
       this.items = [[], []];
@@ -148,16 +166,16 @@ export default class SubDisplay extends Vue {
       this.getBarUnit();
       this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
     }
-    console.log(this.maxUnitScore);
-    console.log(this.items);
+    // console.log(this.maxUnitScore);
+    // console.log(this.items);
   }
 
   private getItem(barIndex: BarIdx) {
     const key = barIndex === 0 ? 'left' : 'right';
     const unitData = this.selectedData[key].unitData;
-    console.log('unitData');
-    console.log(unitData);
-    console.log(this.barUnits[barIndex]);
+    // console.log('unitData');
+    // console.log(unitData);
+    // console.log(this.barUnits[barIndex]);
     // @ts-ignore
     const result: SubDisplayItem[] = _.chain(unitData)
       .map((d: UnitObject) => {
@@ -314,7 +332,7 @@ export default class SubDisplay extends Vue {
         .attr('y', (d: SubDisplayItem) => d.y)
         .attr('width', (d: SubDisplayItem) => d.width)
         .attr('height', (d: SubDisplayItem) => d.height)
-        .attr('fill', (d: SubDisplayItem) => '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6))
+        .attr('fill', (d: SubDisplayItem) => d.color)
         .attr('fill-opacity', 0.9)
         .attr('stroke', '#fff')
         .on('click', function a(d: SubDisplayItem) {

@@ -12,7 +12,7 @@ export default class MainItemList extends Vue {
 
   private mounted() {
     eventBus.$on('updateView', () => {
-      console.log('2');
+      this.$store.state.selectedRadarIndex = [-1, -1];
       this.itemListData = this.$store.state.unitData;
     });
   }

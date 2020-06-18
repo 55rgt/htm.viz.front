@@ -22,6 +22,7 @@ export default new Vuex.Store({
     filterOption: {} as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
     dateUnit: 2,
+    selectedRadarIndex: [-1, -1] as [number, number],
   },
   mutations: {
   },
