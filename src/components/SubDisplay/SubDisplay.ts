@@ -52,6 +52,9 @@ export default class SubDisplay extends Vue {
 
   private items: [SubDisplayItem[], SubDisplayItem[]] = [[], []];
 
+  private overlap: [number, number] = [0, 0];
+
+
   private dragObj = {
     isDown: false,
     py: -1,
@@ -129,6 +132,8 @@ export default class SubDisplay extends Vue {
     console.log('selectedData');
     console.log(this.selectedData);
 
+    this.overlap = [0, 0];
+
     this.bars = [{
       x: (this.subDisplaySVG.width - this.options.gap - this.options.barWidth) / 2,
       y: this.options.margin.y / 2,
@@ -136,7 +141,7 @@ export default class SubDisplay extends Vue {
       height: (this.selectedData.left.unitData.length
         * (this.subDisplaySVG.height - this.options.margin.y))
         / (this.selectedData.left.unitData.length + this.selectedData.right.unitData.length),
-      color: '#bed7b2',
+      color: '#ffa2e9',
     }, {
       x: (this.subDisplaySVG.width + this.options.gap - this.options.barWidth) / 2,
       y: (this.selectedData.left.unitData.length * (this.subDisplaySVG.height - this.options.margin.y))
@@ -146,11 +151,8 @@ export default class SubDisplay extends Vue {
       height: (this.selectedData.right.unitData.length
         * (this.subDisplaySVG.height - this.options.margin.y))
         / (this.selectedData.left.unitData.length + this.selectedData.right.unitData.length),
-      color: '#edb6d3',
+      color: '#93e285',
     }];
-
-    console.log('bars');
-    console.log(this.bars);
 
     if (this.selectedData.left.parentID === '' && this.selectedData.right.parentID === '') {
       this.maxUnitScore = -1;
@@ -166,16 +168,11 @@ export default class SubDisplay extends Vue {
       this.getBarUnit();
       this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
     }
-    // console.log(this.maxUnitScore);
-    // console.log(this.items);
   }
 
   private getItem(barIndex: BarIdx) {
     const key = barIndex === 0 ? 'left' : 'right';
     const unitData = this.selectedData[key].unitData;
-    // console.log('unitData');
-    // console.log(unitData);
-    // console.log(this.barUnits[barIndex]);
     // @ts-ignore
     const result: SubDisplayItem[] = _.chain(unitData)
       .map((d: UnitObject) => {
@@ -214,7 +211,6 @@ export default class SubDisplay extends Vue {
       })
       .flatten()
       .value();
-    console.log(result);
     return result;
   }
 
@@ -250,7 +246,7 @@ export default class SubDisplay extends Vue {
         .value();
       return dt;
     });
-    return cloned;
+    return _.orderBy(cloned, ['unitIndex'], ['asc']);
   }
 
   private getBarUnit() {
@@ -270,7 +266,6 @@ export default class SubDisplay extends Vue {
           .value();
       })
       .value();
-    console.log(this.barUnits);
   }
 
   private initialize() {
@@ -301,6 +296,7 @@ export default class SubDisplay extends Vue {
   }
 
   private updateItem() {
+    console.log(this.bars);
     if (this.barUnits[BarIdx.LEFT].length !== 0 && this.items[BarIdx.LEFT].length !== 0) {
       this.subDisplaySVG.svg.select('.leftBar')
         .selectAll('rect')
@@ -355,8 +351,8 @@ export default class SubDisplay extends Vue {
         .attr('y', (d: SubDisplayBarUnit) => d.y)
         .attr('width', (d: SubDisplayBarUnit) => d.width)
         .attr('height', (d: SubDisplayBarUnit) => d.height)
-        .attr('fill', this.bars[BarIdx.LEFT].color)
-        .attr('stroke', shadeColor(this.bars[BarIdx.LEFT].color, -40));
+        .attr('fill', this.bars[BarIdx.RIGHT].color)
+        .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40));
 
       this.subDisplaySVG.svg.select('.rightItemList')
         .selectAll('rect')
@@ -436,35 +432,75 @@ export default class SubDisplay extends Vue {
 
   private startDrag(d: any) {
     console.log('startDrag');
+    this.dragObj.isDown = true;
+    this.dragObj.py = d[1];
   }
 
   private moveDrag(d: any, barIndex: BarIdx) {
+    if (!this.dragObj.isDown) return;
+    const delta = d[1] - this.dragObj.py;
+    this.dragObj.py = d[1];
+
+    if (this.bars[barIndex].y + delta < this.options.margin.y / 2
+      || this.bars[barIndex].y + this.bars[barIndex].height + delta
+      > this.subDisplaySVG.height - this.options.margin.y / 2) return;
+
+    this.updateYPosition(barIndex, delta);
   }
 
   private updateYPosition(moveIndex: BarIdx, delta: number) {
-    // this.bars[moveIndex].y += delta;
-    // _.forEach(this.barUnits[moveIndex], (d) => d.y += delta);
-    // _.forEach(this.items[moveIndex], (d) => d.y += delta);
-    // const s = (moveIndex === BarIdx.LEFT ? {
-    //   id: '#leftBar',
-    //   unitClass: '.leftBarUnit',
-    //   itemClass: '.leftItem',
-    // } : {
-    //   id: '#rightBar',
-    //   unitClass: '.rightBarUnit',
-    //   itemClass: '.rightItem',
-    // });
-    // d3.select(s.id).attr('y', () => this.bars[moveIndex].y);
-    // d3.selectAll(s.unitClass).each(function (d: any) {
-    //   d3.select(this).attr('y', d.y);
-    // });
-    // d3.selectAll(s.itemClass).each(function (d: any) {
-    //   d3.select(this).attr('y', d.y);
-    // });
+    this.bars[moveIndex].y += delta;
+    _.forEach(this.barUnits[moveIndex], (d) => d.y += delta);
+    _.forEach(this.items[moveIndex], (d) => d.y += delta);
+    const s = (moveIndex === BarIdx.LEFT ? {
+      id: '#leftBar',
+      unitClass: '.leftBarUnit',
+      itemClass: '.leftItem',
+    } : {
+      id: '#rightBar',
+      unitClass: '.rightBarUnit',
+      itemClass: '.rightItem',
+    });
+    d3.select(s.id).attr('y', () => this.bars[moveIndex].y);
+    d3.selectAll(s.unitClass).each(function (d: any) {
+      d3.select(this).attr('y', d.y);
+    });
+    d3.selectAll(s.itemClass).each(function (d: any) {
+      d3.select(this).attr('y', d.y);
+    });
   }
 
   private endDrag(d: any, barIndex: BarIdx) {
+    this.dragObj.isDown = false;
+    const obj = {
+      moveIdx: barIndex,
+      upperIdx: this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ? BarIdx.LEFT : BarIdx.RIGHT,
+      overLapY: this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ?  this.bars[BarIdx.RIGHT].y : this.bars[BarIdx.LEFT].y,
+      unitHeight: this.barUnits[BarIdx.LEFT][0].height,
+    };
+    const targetUnit = _.find(this.barUnits[obj.upperIdx],(d) => obj.overLapY >= d.y && obj.overLapY <= d.y + d.height);
+    const gap = _.isUndefined(targetUnit) ? 0 : targetUnit.y + targetUnit.height - obj.overLapY;
+    const sign = [1, 2, 4, 7].includes(4 * (1 - obj.moveIdx) + 2 * (1 - obj.upperIdx) + (gap < obj.unitHeight / 2 ? 1 : 0)) ? -1 : 1;
+    const value = (gap < obj.unitHeight / 2 ? gap : obj.unitHeight - gap);
+    this.updateYPosition(obj.moveIdx, sign * value);
 
+    this.overlap = this.bars[BarIdx.LEFT].y < this.bars[BarIdx.RIGHT].y ?
+      [this.bars[BarIdx.RIGHT].y, this.bars[BarIdx.LEFT].y + this.bars[BarIdx.LEFT].height] :
+      [this.bars[BarIdx.LEFT].y, this.bars[BarIdx.RIGHT].y + this.bars[BarIdx.RIGHT].height];
+
+    this.updateFocusedItem();
+  }
+
+  private updateFocusedItem() {
+    // 만약 한쪽이 비어있으면 return;
+    const that = this;
+
+    const unitIndexes = _.times(2, (n) => _.chain(this.barUnits[n])
+      .filter((d: SubDisplayBarUnit) => d.y >= this.overlap[0] && d.y + d.height <= this.overlap[1])
+      .map(d => d.unitIndex)
+      .value());
+    console.log(unitIndexes);
+    console.log(this.selectedData['left']['unitData'])
   }
 
 }
