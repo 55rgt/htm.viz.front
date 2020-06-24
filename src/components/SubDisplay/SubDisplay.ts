@@ -62,6 +62,7 @@ export default class SubDisplay extends Vue {
 
   private options = {
     barWidth: 4,
+    focusGap: 80,
     gap: 90,
     margin: {
       x: 40,
@@ -80,6 +81,9 @@ export default class SubDisplay extends Vue {
       index: number,
       parentID: string,
     }) => {
+      if (this.selectedData.left.parentID !== '' && this.selectedData.right.parentID !== '' &&
+        this.selectedData.left.parentID !== obj.parentID &&
+        this.selectedData.right.parentID !== obj.parentID) return;
       this.updateData(obj);
       this.updateItem();
     });
@@ -89,6 +93,7 @@ export default class SubDisplay extends Vue {
     barSelector: string;
     itemSelector: string;
   }) {
+    this.subDisplaySVG.svg.select('#focusedItemList').selectAll('*').remove();
     this.subDisplaySVG.svg.select(o.barSelector).selectAll('*').remove();
     this.subDisplaySVG.svg.select(o.itemSelector).selectAll('*').remove();
   }
@@ -385,6 +390,8 @@ export default class SubDisplay extends Vue {
       .attr('width', this.subDisplaySVG.width)
       .attr('height', this.subDisplaySVG.height);
 
+    const focused = this.subDisplaySVG.svg.append('g').attr('id', 'focusedItemList');
+
     const left = this.subDisplaySVG.svg.append('g').attr('id', 'leftDisplay');
 
     left.append('g').attr('class', 'leftBar');
@@ -431,6 +438,7 @@ export default class SubDisplay extends Vue {
   }
 
   private startDrag(d: any) {
+    // 하나만 있으면 드래그 안 되게 하기.
     console.log('startDrag');
     this.dragObj.isDown = true;
     this.dragObj.py = d[1];
@@ -488,6 +496,8 @@ export default class SubDisplay extends Vue {
       [this.bars[BarIdx.RIGHT].y, this.bars[BarIdx.LEFT].y + this.bars[BarIdx.LEFT].height] :
       [this.bars[BarIdx.LEFT].y, this.bars[BarIdx.RIGHT].y + this.bars[BarIdx.RIGHT].height];
 
+    console.log(this.overlap);
+
     this.updateFocusedItem();
   }
 
@@ -495,12 +505,65 @@ export default class SubDisplay extends Vue {
     // 만약 한쪽이 비어있으면 return;
     const that = this;
 
+    const adjust = (n: number, fp = 2) => Math.floor(n * Math.pow(10, fp)) / Math.pow(10, fp);
+
     const unitIndexes = _.times(2, (n) => _.chain(this.barUnits[n])
-      .filter((d: SubDisplayBarUnit) => d.y >= this.overlap[0] && d.y + d.height <= this.overlap[1])
+      .filter((d: SubDisplayBarUnit) => adjust(d.y) >= adjust(this.overlap[0]) &&
+        adjust(d.y) + adjust(d.height) <= adjust(this.overlap[1]))
       .map(d => d.unitIndex)
       .value());
-    console.log(unitIndexes);
-    console.log(this.selectedData['left']['unitData'])
+
+    const keys: [Keys, Keys] = ['left', 'right'];
+
+    const dayIndexes = _.map(keys, (k: Keys, i: number) => _.chain(this.selectedData[k].unitData)
+      .filter((d) => unitIndexes[i].indexOf(d.unitIndex) !== -1)
+      .map((d) => d.dateIndexes)
+      .flatten()
+      .value()
+      .sort());
+
+    const focusedItems = _.chain(_.zip(dayIndexes[0], dayIndexes[1]))
+      .map((d: [number | undefined, number | undefined]) => _.map(d, (n: number | undefined, i: number) => {
+        if (_.isNil(n)) return 0;
+        const key: Keys = i === 0 ? 'left' : 'right';
+        const datum = _.find(this.selectedData[key]['dailyData'], (o) => o.dateIndex === n);
+        return _.isNil(datum.metrics[this.$store.state.focusedMetrics]) ? 0 :
+          datum.metrics[this.$store.state.focusedMetrics];
+      }))
+      .value();
+
+    console.log(focusedItems);
+
+    // @ts-ignore
+    const maxDiff: number = _.chain(focusedItems)
+      .map((d: [number, number]) => Math.abs(d[0] - d[1]))
+      .max()
+      .value();
+
+    const height = this.barUnits[BarIdx.LEFT][0].height / this.$store.state.dateUnit;
+
+    this.subDisplaySVG.svg.select('#focusedItemList')
+      .selectAll('rect')
+      .data(focusedItems)
+      .join(
+        (enter: any) => enter
+          .append('rect')
+          .attr('class', 'focusedItem'),
+        (update: any) => update,
+        (exit: any) => exit.call((exit: any) => exit.remove()),
+      )
+      .attr('x', (d: [number, number]) => {
+        return d[0] < d[1] ? this.subDisplaySVG.width / 2 + 2 :
+          this.subDisplaySVG.width / 2 - (this.options.focusGap / 2) *
+          Math.abs(d[0] - d[1]) / maxDiff;
+      })
+      .attr('y', (d: [number, number], i: number) => height * i + this.overlap[0])
+      .attr('width', (d: [number, number]) => (this.options.focusGap / 2) *
+        Math.abs(d[0] - d[1]) / maxDiff)
+      .attr('height', () => height)
+      .attr('fill', 'blue');
+      // .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40));
+
   }
 
 }

@@ -74,3 +74,8 @@ const result = _.chain(a)
   .entries()
   // .sort()
   .value();
+
+
+const aa = 10.333333333329;
+
+console.log(Math.floor(aa * 100) / 100);

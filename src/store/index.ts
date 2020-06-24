@@ -21,8 +21,9 @@ export default new Vuex.Store({
     sortOption: [] as Interface.SortOptionItem[],
     filterOption: {} as Interface.FilterOption,
     weightController: {} as Interface.WeightController,
-    dateUnit: 2,
+    dateUnit: 4,
     selectedRadarIndex: [-1, -1] as [number, number],
+    focusedMetrics: 'clicks',
   },
   mutations: {
   },
