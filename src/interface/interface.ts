@@ -96,7 +96,8 @@ export interface SubDisplayBarUnit extends Rect {
 }
 
 export interface SubDisplayItem extends Rect {
-  isSelected: boolean;
+  cx: number;
+  cy: number;
   metric: string;
   rank: number; // 가운데로부터 얼마나 가까운지
   unitIndex: number; // y 축 인덱스
