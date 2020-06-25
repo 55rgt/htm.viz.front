@@ -15,6 +15,20 @@
       </div>
     </div>
     <div class="subDisplay-controller-container">
+<!--      <v-select-->
+<!--        v-model="$store.state.clickedMetrics"-->
+<!--        :items="$store.state.selectedMetrics"-->
+<!--        attach-->
+<!--        chips-->
+<!--        label="Chips"-->
+<!--        multiple-->
+<!--      ></v-select>-->
+      <v-select
+        dense
+        :items="$store.state.clickedMetrics"
+        label=""
+        v-model="focusedMetric"
+      ></v-select>
     </div>
     <div class="subDisplay-content-container" ref="subDisplay"
          id="subDisplayID">

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Vue, Component } from 'vue-property-decorator';
+import {Vue, Component, Watch} from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import { shadeColor } from '@/utils/color-controller';
 import {
@@ -62,6 +62,15 @@ export default class SubDisplay extends Vue {
     },
   };
 
+  private focusedMetric = this.$store.state.focusedMetrics;
+
+  @Watch('focusedMetric')
+  onChange() {
+    console.log(this.focusedMetric);
+    this.$store.state.focusedMetrics = this.focusedMetric;
+    this.updateFocusedItem();
+  }
+
   private bars!: [SubDisplayBar, SubDisplayBar];
 
   private barUnits!: [SubDisplayBarUnit[], SubDisplayBarUnit[]];
@@ -71,6 +80,8 @@ export default class SubDisplay extends Vue {
   private overlap: [number, number] = [0, 0];
 
   private uw: number = 1;
+
+
 
 
   private dragObj = {

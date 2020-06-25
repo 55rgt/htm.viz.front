@@ -1,4 +1,5 @@
-
+// @ts-ignore
+/* eslint-disable */
 // elements for obtaining vals
 // var val1El = document.getElementById('color1');
 // var val2El = document.getElementById('color2');
