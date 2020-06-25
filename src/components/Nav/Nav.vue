@@ -13,7 +13,7 @@
                 <div class="panel-option-name"> Date Unit </div>
                 <div class="panel-option-input-wrapper">
                   <label>
-                    <input class="panel-option-input">
+                    <input class="panel-option-input" v-model="dateUnit">
                   </label>
                 </div>
               </div>
@@ -21,7 +21,7 @@
                 <div class="panel-option-name"> Show Max </div>
                 <div class="panel-option-input-wrapper">
                   <label>
-                    <input class="panel-option-input">
+                    <input class="panel-option-input" v-model="showMax">
                   </label>
                 </div>
               </div>
@@ -58,18 +58,38 @@
                   </div>
                 </div>
                 <div class="panel-empty"></div>
-                <div class="panel-metric-results"> 3 Matched Metrics Found. </div>
+                <div class="panel-metric-results">
+                  {{ searchedMetricsList.length }} Matched Metrics Found. </div>
               </div>
               <div class="panel-metric-list no-scroll">
-                <div class="panel-metric-list-item-wrapper">
-                  <div class="panel-metric-list-item"></div>
-                </div>
-                <div class="panel-metric-list-item-wrapper">
-                  <div class="panel-metric-list-item"></div>
-                </div>
-                <div class="panel-metric-list-item-wrapper">
-                  <div class="panel-metric-list-item"></div>
-                </div>
+<!--                <div v-for="(n, i) in searchedMetricsList" :key="n"-->
+<!--                     class="panel-metric-list-item-wrapper">-->
+<!--                  <div class="panel-metric-list-item">-->
+<!--                    <div class="panel-metric-list-item-header">-->
+<!--                      <div class="panel-metric-selection-button-wrapper">-->
+<!--                        <div @click="changeSelectedMetrics(n)"-->
+<!--                             class="panel-metric-selection-button">-->
+<!--                          <font-awesome-icon v-if=isSelected(n) class="check-icon"-->
+<!--                                             :icon="['fas', 'check']"-->
+<!--                                             :style="{ color: '#aaa'}"/>-->
+<!--                        </div>-->
+<!--                      </div>-->
+<!--                      <div class="panel-metric-selection-text"> {{ n }}</div>-->
+<!--                    </div>-->
+<!--                    <div class="panel-metric-list-item-body">-->
+<!--                      <div class="panel-metric-body-detail">-->
+<!--                        <div class="panel-metric-body-detail-item">-->
+<!--                          σ rank: {{ i + 1 }} </div>-->
+<!--                        <div class="panel-metric-body-detail-item">-->
+<!--                          Weight: {{ i + 1 }} </div>-->
+<!--                        <div class="panel-metric-body-detail-item"> Sort: {{ i + 1 }} </div>-->
+<!--                      </div>-->
+<!--                      <div class="panel-metric-body-detail">-->
+<!--                        <div class="panel-metric-body-detail-item"> Filter </div>-->
+<!--                      </div>-->
+<!--                    </div>-->
+<!--                  </div>-->
+<!--                </div>-->
               </div>
             </v-expansion-panel-content>
           </v-expansion-panel>
@@ -77,13 +97,13 @@
             <v-expansion-panel-header class="pa-2 panel-header border-b">
               Data Results </v-expansion-panel-header>
             <v-expansion-panel-content class="pa-0">
-              <v-data-table
-                :headers="tableHeaders"
-                :items="filteredTableList"
-                :items-per-page="9999"
-                class="panel-data-table panel-data-list no-scroll"
-                :hide-default-footer="true"
-              />
+<!--              <v-data-table-->
+<!--                :headers="tableHeaders"-->
+<!--                :items="filteredTableList"-->
+<!--                :items-per-page="9999"-->
+<!--                class="panel-data-table panel-data-list no-scroll"-->
+<!--                :hide-default-footer="true"-->
+<!--              />-->
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>

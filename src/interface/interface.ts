@@ -109,8 +109,7 @@ export interface FocusedItem {
   values: {
     date: string;
     value: number;
-  }
-
+  }[];
 }
 
 

@@ -557,8 +557,8 @@ export default class SubDisplay extends Vue {
       .attr('width', (d: [number, number]) => (this.options.focusGap / 2) *
         Math.abs(d[0] - d[1]) / maxDiff)
       .attr('height', () => height)
-      .attr('fill', 'blue');
-      // .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40));
+      .attr('fill', '#fbe9c3')
+      .attr('stroke', shadeColor('#fbe9c3', -20));
 
     const dates = _.map(keys, (k: Keys, i: number) => _.chain(this.selectedData[k].unitData)
       .filter((d) => unitIndexes[i].indexOf(d.unitIndex) !== -1)
@@ -568,18 +568,23 @@ export default class SubDisplay extends Vue {
       .sort());
 
     const focusedData = _.chain(dates)
-      .map((d: string[], i: number) => _.map(d, (e: string) => {
-          const key: Keys = i === 0 ? 'left' : 'right';
-          const datum = _.find(this.selectedData[key]['dailyData'], (o) => o.date === e);
-          return {
-            name: this.selectedData[key].parentID,
-            values: {
-              date: datum.date,
-              value: _.isNil(datum.metrics[this.$store.state.focusedMetrics]) ? 0 :
-                datum.metrics[this.$store.state.focusedMetrics],
-            },
-          }
-      }))
+      .map((d: string[], i: number) => {
+        const key: Keys = i === 0 ? 'left' : 'right';
+        const name: string = this.selectedData[key].parentID;
+        const values = _.reduce(d, (result, str: string) => {
+          const datum = _.find(this.selectedData[key]['dailyData'], (o) => o.date === str);
+          result.push({
+            date: d3.timeParse('%Y-%m-%d')(datum.date),
+            value: _.isNil(datum.metrics[this.$store.state.focusedMetrics]) ? 0 :
+              datum.metrics[this.$store.state.focusedMetrics],
+          });
+          return result;
+        }, [] as { date: any; value: number; }[]);
+        return {
+          name,
+          values,
+        }
+      })
       .value();
 
     eventBus.$emit('updateSubGraph', focusedData);

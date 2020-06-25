@@ -1,4 +1,4 @@
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { eventBus } from '@/utils/event-bus';
 import _ from 'lodash';
 import { generatePalette } from '@/utils/color-controller';
@@ -18,6 +18,24 @@ export default class Nav extends Vue {
     value: 'parentID',
   }];
 
+  private metricsList: string[] = [];
+
+  private searchedMetricsList: string[] = [];
+
+  private dateUnit: number = this.$store.state.dateUnit;
+
+  private showMax: number = this.$store.state.showMax;
+
+  @Watch('dateUnit')
+  onDateUnit() {
+    this.$store.state.dateUnit = this.dateUnit;
+  }
+
+  @Watch('showMax')
+  onShowMax() {
+    this.$store.state.showMax = this.showMax;
+  }
+
   private totalTableList: {
     [metric: string]: string | number;
   }[] = [];
@@ -33,6 +51,10 @@ export default class Nav extends Vue {
       .uniq()
       .value()
       .sort();
+
+    this.metricsList = this.$store.state.totalMetrics;
+
+    this.searchedMetricsList = this.metricsList;
 
     this.tableHeaders = this.tableHeaders.concat(
       _.map(this.$store.state.totalMetrics, (d) => ({ text: d, value: d })),
@@ -97,4 +119,21 @@ export default class Nav extends Vue {
       return +((((b || 0) / data.length) + (_.isNumber(a) ? (a || 0) : 0)).toFixed(2));
     }
   });
+
+  private changeSelectedMetrics(n: string) {
+    if (this.isSelected(n)) {
+      console.log('pop');
+      this.$store.state.selectedMetrics = _.remove(this.$store.state.selectedMetrics,
+        (s: string) => s !== n);
+      console.log(this.$store.state.selectedMetrics);
+    } else {
+      console.log('push');
+      this.$store.state.selectedMetrics.push(n);
+      console.log(this.$store.state.selectedMetrics);
+    }
+  }
+
+  private isSelected(n: string) {
+    return this.$store.state.selectedMetrics.indexOf(n) !== -1;
+  }
 }
