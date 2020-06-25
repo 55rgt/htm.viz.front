@@ -222,6 +222,55 @@ export default class SubDisplay extends Vue {
     }
   }
 
+  private getItems(barIndex: BarIdx) {
+    const key = barIndex === 0 ? 'left' : 'right';
+    const unitData = this.selectedData[key].unitData;
+    // @ts-ignore
+    const result: SubDisplayItem[] = _.chain(unitData)
+      .map((d: UnitObject) => {
+        const unitIndex = d.unitIndex;
+        const sortedEntries = _.chain(d.metrics)
+          .entries()
+          .filter((e) => this.$store.state.clickedMetrics.indexOf(e[0]) !== -1)
+          // .sort() -> 정렬 기준에 의해 정렬해야 함.
+          .value();
+        return _.map(sortedEntries, (e: [string, number], rank: number) => {
+          const selectedSortedEntries = sortedEntries; // 나중에 바꿔야 함.
+          // 이것도 MAth.max 해서 나중에 고정해줘도 좋을 것 같다.
+          const width = (this.bars[barIndex].x - 1 - this.options.margin.x / 2) / sortedEntries.length;
+          // const center =
+          return {
+            x: barIndex === BarIdx.LEFT ?
+              (this.bars[barIndex].x - 1) - (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
+              * (_.chain(selectedSortedEntries)
+                .slice(0, rank + 1)
+                .sumBy((d) => d[1])
+                .value() / this.maxUnitScore)
+              : (this.bars[barIndex].x + this.options.barWidth + 1)
+              + (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
+              * (_.chain(selectedSortedEntries)
+                .slice(0, rank)
+                .sumBy((d) => d[1])
+                .value() / this.maxUnitScore),
+            y: this.barUnits[barIndex][unitIndex].y,
+            metric: e[0],
+            rank: rank,
+            unitIndex: unitIndex,
+            width: e[1] * (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2) / this.maxUnitScore,
+            height: this.barUnits[barIndex][unitIndex].height,
+            color: /* 'this.$store.state.displayMetric.metricPalette[d.metric]' */ '#aaa',
+            isSelected: true,
+            /* this.$store.state.displayMetric.selectedMetrics.indexOf(d.metric) !== -1 */
+            score: e[1],
+          }
+        });
+      })
+      .flatten()
+      .value();
+    return result;
+
+  }
+
   private getItem(barIndex: BarIdx) {
     const key = barIndex === 0 ? 'left' : 'right';
     const unitData = this.selectedData[key].unitData;

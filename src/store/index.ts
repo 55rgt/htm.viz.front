@@ -25,6 +25,9 @@ export default new Vuex.Store({
     dateUnit: 4,
     selectedRadarIndex: [-1, -1] as [number, number],
     focusedMetrics: 'clicks',
+    clickedMetrics: [
+      'clicks', 'cpc', 'frequency', 'impressions', 'reach', 'unique_ctr', 'cpm', 'ctr', 'actions#link_click',
+    ] as string[],
   },
   mutations: {
   },
