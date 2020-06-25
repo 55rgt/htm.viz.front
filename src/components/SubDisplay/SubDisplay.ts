@@ -8,7 +8,8 @@ import {
 } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
-import tinygradient from 'tinygradient';
+import {makeGradient} from "@/utils/color-gradient";
+// import tinygradient from 'tinygradient';
 
 type Keys = 'left' | 'right';
 
@@ -105,11 +106,11 @@ export default class SubDisplay extends Vue {
       this.updateItem();
     });
   }
-  private getRGBGradientColor(stop: { color: string; pos: number; }[], step: number, index: number) {
-    const gradient = tinygradient(stop);
-    const colors = gradient.rgb(step);
-    return colors[index];
-  }
+  // private getRGBGradientColor(stop: { color: string; pos: number; }[], step: number, index: number) {
+  //   const gradient = tinygradient(stop);
+  //   const colors = gradient.rgb(step);
+  //   return colors[index];
+  // }
 
   private removeItem(o: {
     barSelector: string;
@@ -268,7 +269,7 @@ export default class SubDisplay extends Vue {
             unitIndex: unitIndex,
             width: 2 * hw,
             height: 2 * hh,
-            color: /* 'this.$store.state.displayMetric.metricPalette[d.metric]' */ '#aaa',
+            color: makeGradient('#e74c30', '#242482', 100, Math.floor(e[1] * 100)),
             /* this.$store.state.displayMetric.selectedMetrics.indexOf(d.metric) !== -1 */
             score: e[1],
           }
