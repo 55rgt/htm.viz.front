@@ -1,7 +1,7 @@
 import { Vue, Component } from 'vue-property-decorator';
 import * as d3 from 'd3';
 import { eventBus } from '@/utils/event-bus';
-import { SVG } from '@/interface/interface';
+import { FocusedItem, SVG } from '@/interface/interface';
 import _ from 'lodash';
 
 @Component({})
@@ -20,10 +20,7 @@ export default class SubGraph extends Vue {
 
   private scatter: any = null;
 
-  private data: {
-    x: number;
-    y: number;
-  }[] = [];
+  private data: FocusedItem[] = [];
 
   private margin = {
     top: 20, right: 30, bottom: 20, left: 30,
@@ -33,8 +30,9 @@ export default class SubGraph extends Vue {
     subGraph: HTMLElement;
   };
 
-  created() {
-    eventBus.$on('updateSubGraph', () => {
+  mounted() {
+    eventBus.$on('updateSubGraph', (d: FocusedItem) => {
+      console.log(d);
       this.initialize();
       this.remove();
       this.drawElements();
@@ -48,13 +46,6 @@ export default class SubGraph extends Vue {
       height: this.$refs.subGraph.offsetHeight - this.margin.top - this.margin.bottom,
       svg: null,
     };
-  }
-
-  private generateData() {
-    return _.times(100, () => ({
-      x: Math.random() * 4 + 4,
-      y: Math.random() * 9,
-    }));
   }
 
   private remove() {
@@ -75,8 +66,6 @@ export default class SubGraph extends Vue {
   }
 
   private drawElements() {
-    this.data = this.generateData();
-
     const svg = d3.select('#subGraphID')
       .append('svg')
       .attr('id', this.subGraphSVG.svgID)

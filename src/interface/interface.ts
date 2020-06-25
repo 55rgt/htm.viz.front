@@ -104,4 +104,13 @@ export interface SubDisplayItem extends Rect {
   color: string;
 }
 
+export interface FocusedItem {
+  name: string;
+  values: {
+    date: string;
+    value: number;
+  }
+
+}
+
 

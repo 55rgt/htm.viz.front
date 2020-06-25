@@ -496,8 +496,6 @@ export default class SubDisplay extends Vue {
       [this.bars[BarIdx.RIGHT].y, this.bars[BarIdx.LEFT].y + this.bars[BarIdx.LEFT].height] :
       [this.bars[BarIdx.LEFT].y, this.bars[BarIdx.RIGHT].y + this.bars[BarIdx.RIGHT].height];
 
-    console.log(this.overlap);
-
     this.updateFocusedItem();
   }
 
@@ -532,8 +530,6 @@ export default class SubDisplay extends Vue {
       }))
       .value();
 
-    console.log(focusedItems);
-
     // @ts-ignore
     const maxDiff: number = _.chain(focusedItems)
       .map((d: [number, number]) => Math.abs(d[0] - d[1]))
@@ -564,6 +560,29 @@ export default class SubDisplay extends Vue {
       .attr('fill', 'blue');
       // .attr('stroke', shadeColor(this.bars[BarIdx.RIGHT].color, -40));
 
+    const dates = _.map(keys, (k: Keys, i: number) => _.chain(this.selectedData[k].unitData)
+      .filter((d) => unitIndexes[i].indexOf(d.unitIndex) !== -1)
+      .map((d) => d.dates)
+      .flatten()
+      .value()
+      .sort());
+
+    const focusedData = _.chain(dates)
+      .map((d: string[], i: number) => _.map(d, (e: string) => {
+          const key: Keys = i === 0 ? 'left' : 'right';
+          const datum = _.find(this.selectedData[key]['dailyData'], (o) => o.date === e);
+          return {
+            name: this.selectedData[key].parentID,
+            values: {
+              date: datum.date,
+              value: _.isNil(datum.metrics[this.$store.state.focusedMetrics]) ? 0 :
+                datum.metrics[this.$store.state.focusedMetrics],
+            },
+          }
+      }))
+      .value();
+
+    eventBus.$emit('updateSubGraph', focusedData);
   }
 
 }
