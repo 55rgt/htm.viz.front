@@ -3,7 +3,7 @@
   <div class="subDisplay-container">
     <div class="subDisplay-text-container">
       <div class="subDisplay-text-item">
-        <div class="subDisplay-text-detail"> {{ textDetail[0].name }}</div>
+        <div class="subDisplay-text-detail"> {{textDetail[0].name}}</div>
         <div class="subDisplay-text-detail"> {{ textDetail[0].time }}</div>
         <div class="subDisplay-text-detail"> {{ textDetail[0].avgScore }}</div>
       </div>

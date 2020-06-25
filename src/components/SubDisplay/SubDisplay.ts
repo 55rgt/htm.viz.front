@@ -31,7 +31,6 @@ export default class SubDisplay extends Vue {
     name: string;
     time: string;
     avgScore: string;
-
   }[] = [{
     name: '',
     time: '',
@@ -141,7 +140,9 @@ export default class SubDisplay extends Vue {
         avgScore: `Avg Score: 0.37`,
       }
     }
-    console.log(this.textDetail);
+    console.log('this.textDetail', this.textDetail);
+    // TODO rendered by force
+    this.$forceUpdate();
   }
 
   private updateData(obj: {

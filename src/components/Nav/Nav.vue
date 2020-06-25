@@ -62,34 +62,34 @@
                   {{ searchedMetricsList.length }} Matched Metrics Found. </div>
               </div>
               <div class="panel-metric-list no-scroll">
-<!--                <div v-for="(n, i) in searchedMetricsList" :key="n"-->
-<!--                     class="panel-metric-list-item-wrapper">-->
-<!--                  <div class="panel-metric-list-item">-->
-<!--                    <div class="panel-metric-list-item-header">-->
-<!--                      <div class="panel-metric-selection-button-wrapper">-->
-<!--                        <div @click="changeSelectedMetrics(n)"-->
-<!--                             class="panel-metric-selection-button">-->
-<!--                          <font-awesome-icon v-if=isSelected(n) class="check-icon"-->
-<!--                                             :icon="['fas', 'check']"-->
-<!--                                             :style="{ color: '#aaa'}"/>-->
-<!--                        </div>-->
-<!--                      </div>-->
-<!--                      <div class="panel-metric-selection-text"> {{ n }}</div>-->
-<!--                    </div>-->
-<!--                    <div class="panel-metric-list-item-body">-->
-<!--                      <div class="panel-metric-body-detail">-->
-<!--                        <div class="panel-metric-body-detail-item">-->
-<!--                          σ rank: {{ i + 1 }} </div>-->
-<!--                        <div class="panel-metric-body-detail-item">-->
-<!--                          Weight: {{ i + 1 }} </div>-->
-<!--                        <div class="panel-metric-body-detail-item"> Sort: {{ i + 1 }} </div>-->
-<!--                      </div>-->
-<!--                      <div class="panel-metric-body-detail">-->
-<!--                        <div class="panel-metric-body-detail-item"> Filter </div>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                  </div>-->
-<!--                </div>-->
+                <div v-for="(n, i) in searchedMetricsList" :key="n"
+                     class="panel-metric-list-item-wrapper">
+                  <div class="panel-metric-list-item">
+                    <div class="panel-metric-list-item-header">
+                      <div class="panel-metric-selection-button-wrapper">
+                        <div @click="changeSelectedMetrics(n)"
+                             class="panel-metric-selection-button">
+                          <font-awesome-icon v-if=isSelected(n) class="check-icon"
+                                             :icon="['fas', 'check']"
+                                             :style="{ color: '#aaa'}"/>
+                        </div>
+                      </div>
+                      <div class="panel-metric-selection-text"> {{ n }}</div>
+                    </div>
+                    <div class="panel-metric-list-item-body">
+                      <div class="panel-metric-body-detail">
+                        <div class="panel-metric-body-detail-item">
+                          σ rank: {{ i + 1 }} </div>
+                        <div class="panel-metric-body-detail-item">
+                          Weight: {{ i + 1 }} </div>
+                        <div class="panel-metric-body-detail-item"> Sort: {{ i + 1 }} </div>
+                      </div>
+                      <div class="panel-metric-body-detail">
+                        <div class="panel-metric-body-detail-item"> Filter </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </v-expansion-panel-content>
           </v-expansion-panel>
