@@ -8,6 +8,7 @@ import {
 } from '@/interface/interface';
 import _ from 'lodash';
 import * as d3 from 'd3';
+import tinygradient from 'tinygradient';
 
 type Keys = 'left' | 'right';
 
@@ -68,6 +69,8 @@ export default class SubDisplay extends Vue {
 
   private overlap: [number, number] = [0, 0];
 
+  private uw: number = 1;
+
 
   private dragObj = {
     isDown: false,
@@ -101,6 +104,11 @@ export default class SubDisplay extends Vue {
       this.updateData(obj);
       this.updateItem();
     });
+  }
+  private getRGBGradientColor(stop: { color: string; pos: number; }[], step: number, index: number) {
+    const gradient = tinygradient(stop);
+    const colors = gradient.rgb(step);
+    return colors[index];
   }
 
   private removeItem(o: {
@@ -219,7 +227,7 @@ export default class SubDisplay extends Vue {
         // @ts-ignore
         .value()).toFixed(2));
       this.getBarUnit();
-      this.items = [this.getItem(BarIdx.LEFT), this.getItem(BarIdx.RIGHT)];
+      this.items = [this.getItems(BarIdx.LEFT), this.getItems(BarIdx.RIGHT)];
     }
   }
 
@@ -235,32 +243,32 @@ export default class SubDisplay extends Vue {
           .filter((e) => this.$store.state.clickedMetrics.indexOf(e[0]) !== -1)
           // .sort() -> 정렬 기준에 의해 정렬해야 함.
           .value();
-        return _.map(sortedEntries, (e: [string, number], rank: number) => {
-          const selectedSortedEntries = sortedEntries; // 나중에 바꿔야 함.
+        const rank = (str: string) => _.chain(sortedEntries)
+          .orderBy((d) => d[1], ['desc'])
+          .map((d) => d[0])
+          .value()
+          .indexOf(str);
+        return _.map(sortedEntries, (e: [string, number]) => {
           // 이것도 MAth.max 해서 나중에 고정해줘도 좋을 것 같다.
-          const width = (this.bars[barIndex].x - 1 - this.options.margin.x / 2) / sortedEntries.length;
-          // const center =
+          this.uw = (this.bars[0].x - 1 - this.options.margin.x / 2) / sortedEntries.length;
+          const cx = barIndex === BarIdx.LEFT ?
+            (this.bars[barIndex].x - 1) - (rank(e[0]) + 0.5) * this.uw
+            : (this.bars[barIndex].x + this.options.barWidth + 1) + (rank(e[0]) + 0.5) * this.uw;
+          const hw = ((0.3 / (1 - sortedEntries.length)) * rank(e[0]) + 0.5) * this.uw;
+          const height = this.barUnits[barIndex][unitIndex].height;
+          const cy = this.barUnits[barIndex][unitIndex].y + 0.5 * height;
+          const hh = ((0.3 / (1 - sortedEntries.length)) * rank(e[0]) + 0.5) * height;
           return {
-            x: barIndex === BarIdx.LEFT ?
-              (this.bars[barIndex].x - 1) - (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
-              * (_.chain(selectedSortedEntries)
-                .slice(0, rank + 1)
-                .sumBy((d) => d[1])
-                .value() / this.maxUnitScore)
-              : (this.bars[barIndex].x + this.options.barWidth + 1)
-              + (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2)
-              * (_.chain(selectedSortedEntries)
-                .slice(0, rank)
-                .sumBy((d) => d[1])
-                .value() / this.maxUnitScore),
-            y: this.barUnits[barIndex][unitIndex].y,
+            cx,
+            cy,
+            x: cx - hw,
+            y: cy - hh,
             metric: e[0],
-            rank: rank,
+            rank: rank(e[0]),
             unitIndex: unitIndex,
-            width: e[1] * (this.bars[BarIdx.LEFT].x - this.options.margin.x / 2) / this.maxUnitScore,
-            height: this.barUnits[barIndex][unitIndex].height,
+            width: 2 * hw,
+            height: 2 * hh,
             color: /* 'this.$store.state.displayMetric.metricPalette[d.metric]' */ '#aaa',
-            isSelected: true,
             /* this.$store.state.displayMetric.selectedMetrics.indexOf(d.metric) !== -1 */
             score: e[1],
           }

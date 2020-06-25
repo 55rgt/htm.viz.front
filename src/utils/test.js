@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const _ = require('lodash');
+const tinygradient = require('tinygradient');
+
 // // eslint-disable-next-line @typescript-eslint/no-var-requires
 // const fs = require('fs');
 //
@@ -61,21 +62,11 @@ const _ = require('lodash');
 //
 // console.log(getAvg(data2));
 // eslint-disable-next-line no-irregular-whitespace
-const a = {
-  left: 4,
-  right: 5,
-  middle: 19,
-  center: 8,
+const getRGBGradientColor = function (stop, step, index) {
+  const gradient = tinygradient(stop);
+  const colors = gradient.rgb(step);
+  console.log(colors);
+  return colors[index];
 };
 
-const maxScore = 40;
-
-const result = _.chain(a)
-  .entries()
-  // .sort()
-  .value();
-
-
-const aa = 10.333333333329;
-
-console.log(Math.floor(aa * 100) / 100);
+getRGBGradientColor([{ color: '#e74c30', pos: 0 }, { color: '#242482', pos: 1 }], 100, 5);
