@@ -27,6 +27,21 @@ export default class SubDisplay extends Vue {
 
   private maxUnitScore: number = -1;
 
+  private textDetail: {
+    name: string;
+    time: string;
+    avgScore: string;
+
+  }[] = [{
+    name: '',
+    time: '',
+    avgScore: '',
+  },{
+    name: '',
+    time: '',
+    avgScore: '',
+  }];
+
   private selectedData: {
     [K in Keys] : {
       parentID: string;
@@ -98,6 +113,37 @@ export default class SubDisplay extends Vue {
     this.subDisplaySVG.svg.select(o.itemSelector).selectAll('*').remove();
   }
 
+  private getText() {
+    console.log('getText');
+    if (this.selectedData.left.parentID === '') {
+      this.textDetail[0] = {
+        name: '',
+        time: '',
+        avgScore: '',
+      };
+    } else {
+      this.textDetail[0] = {
+        name: `Name: ${this.selectedData.left.parentID}`,
+        time: `Time: ${this.selectedData.left.dailyData[0].date} ~ ${this.selectedData.left.dailyData[this.selectedData.left.dailyData.length - 1].date}`,
+        avgScore: `Avg Score: 0.37`,
+      }
+    }
+    if (this.selectedData.right.parentID === '') {
+      this.textDetail[1] = {
+        name: '',
+        time: '',
+        avgScore: '',
+      };
+    } else {
+      this.textDetail[1] = {
+        name: `Name: ${this.selectedData.right.parentID}`,
+        time: `Time: ${this.selectedData.right.dailyData[0].date} ~ ${this.selectedData.right.dailyData[this.selectedData.right.dailyData.length - 1].date}`,
+        avgScore: `Avg Score: 0.37`,
+      }
+    }
+    console.log(this.textDetail);
+  }
+
   private updateData(obj: {
     data: UnitObject[],
     index: number,
@@ -134,6 +180,7 @@ export default class SubDisplay extends Vue {
         }
       }
     }
+    this.getText();
     console.log('selectedData');
     console.log(this.selectedData);
 

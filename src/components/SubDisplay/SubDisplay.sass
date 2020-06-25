@@ -10,7 +10,16 @@
     padding: 8px
     display: flex
     .subDisplay-text-item
-      flex: 1
+      width: 230px
+      height: 100%
+      &:nth-last-child(1)
+        padding-left: 8px
+      .subDisplay-text-detail
+        width: 100%
+        height: 36px
+        line-height: 36px
+        color: #777
+        font-size: 14px
     .subDisplay-empty
       border: 0.5px dashed #aaa
   .subDisplay-controller-container
